@@ -1,0 +1,109 @@
+.reminder-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+  cursor: pointer;
+}
+
+/* Empty / "Add reminder" state */
+.reminder-picker--empty {
+  padding: 4px 10px;
+  border: 1px dashed var(--border-strong);
+  background: none;
+  color: var(--text-muted);
+}
+.reminder-picker--empty:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* Reminder is set and in the future */
+.reminder-picker--active {
+  padding: 4px 10px;
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--accent);
+  cursor: default;
+}
+
+/* Reminder already fired */
+.reminder-picker--past {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+/* Editing state */
+.reminder-picker--editing {
+  padding: 4px 10px;
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--accent);
+  cursor: default;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.rp-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.rp-time {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 12px;
+  font-family: var(--font);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.rp-time:hover { text-decoration: underline; }
+
+.rp-clear {
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.55;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 1px;
+}
+.rp-clear:hover { opacity: 1; }
+
+.rp-input {
+  border: none;
+  background: none;
+  font-size: 12px;
+  color: var(--text-primary);
+  font-family: var(--font);
+  outline: none;
+  padding: 1px 0;
+  min-width: 160px;
+}
+
+.rp-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--radius-xs);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+.rp-btn--save    { background: var(--accent);      color: var(--accent-fg); }
+.rp-btn--save:hover { background: var(--accent-hover); }
+.rp-btn--danger  { background: var(--danger);      color: #fff; }
+.rp-btn--danger:hover { background: var(--danger-hover); }
+.rp-btn--ghost   { background: var(--bg-tertiary); color: var(--text-secondary); }
+.rp-btn--ghost:hover { background: var(--bg-hover); }

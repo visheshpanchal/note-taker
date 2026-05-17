@@ -1,0 +1,122 @@
+.todo-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-primary);
+}
+
+.todo-editor__header {
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.todo-editor__color-strip {
+  height: 4px;
+  width: 100%;
+}
+.todo-editor__header-inner {
+  padding: 20px 28px 14px;
+}
+
+.todo-editor__title {
+  width: 100%;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+  margin-bottom: 12px;
+}
+.todo-editor__title::placeholder { color: var(--text-muted); }
+
+.todo-editor__cat-select {
+  font-size: 12px;
+  font-weight: 550;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+  appearance: auto;
+}
+.todo-editor__cat-select--set {
+  color: var(--cat);
+  border-color: color-mix(in srgb, var(--cat) 40%, transparent);
+  background: color-mix(in srgb, var(--cat) 8%, transparent);
+}
+
+.todo-editor__stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.todo-editor__progress-track {
+  flex: 1;
+  max-width: 200px;
+  height: 5px;
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.todo-editor__progress-fill {
+  height: 100%;
+  background: var(--success);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.todo-editor__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 32px;
+}
+
+.todo-editor__empty {
+  padding: 40px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.todo-editor__add {
+  padding: 12px 32px;
+  border-top: 1px solid var(--border);
+}
+
+.todo-editor__add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition);
+  border: 1px dashed var(--border);
+}
+.todo-editor__add-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.todo-editor__add-btn span { font-size: 16px; line-height: 1; }
+
+.todo-editor__footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 32px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+}
+
+.todo-editor__attachments {
+  padding: 0 32px 16px;
+}
