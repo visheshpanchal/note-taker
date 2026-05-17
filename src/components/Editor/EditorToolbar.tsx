@@ -69,24 +69,25 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
   const [showTableMenu, setShowTableMenu] = useState(false)
 
   if (!editor) return null
+  const ed = editor
 
   function closeAll() { setShowTextColor(false); setShowHighlight(false); setShowTableMenu(false) }
 
   function promptLink() {
-    const prev = editor.getAttributes('link').href ?? ''
+    const prev = ed.getAttributes('link').href ?? ''
     const url = window.prompt('Enter URL', prev)
     if (url === null) return
-    if (!url) editor.chain().focus().unsetLink().run()
-    else editor.chain().focus().setLink({ href: url }).run()
+    if (!url) ed.chain().focus().unsetLink().run()
+    else ed.chain().focus().setLink({ href: url }).run()
   }
 
   function promptImage() {
     const url = window.prompt('Image URL')
-    if (url) editor.chain().focus().setImage({ src: url }).run()
+    if (url) ed.chain().focus().setImage({ src: url }).run()
   }
 
-  const inTable = editor.isActive('table')
-  const currentColor = editor.getAttributes('textStyle').color as string | undefined
+  const inTable = ed.isActive('table')
+  const currentColor = ed.getAttributes('textStyle').color as string | undefined
 
   return (
     <div className="editor-toolbar">

@@ -252,7 +252,7 @@ describe('FileExplorer', () => {
 
   it('filters notes by type', () => {
     const note = createNote({ title: 'My Note' }, null)
-    const todo = { ...createNote({ title: 'My Todo' }, null), type: 'todo' as const }
+    const todo = { ...createNote({ title: 'My Todo' }, null), type: 'todo' as const, items: [], reminderAt: null, reminderNotified: false }
     setup({ notes: [note, todo] })
     const filters: FEFilters = { ...defaultFilters, typeFilter: 'todo' }
     render(

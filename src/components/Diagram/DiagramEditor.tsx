@@ -74,7 +74,7 @@ export function DiagramEditor({ note }: DiagramEditorProps) {
       <div className="diagram-editor__canvas">
         <Excalidraw
           initialData={initialData}
-          onChange={handleChange as Parameters<typeof Excalidraw>[0]['onChange']}
+          onChange={handleChange as unknown as Parameters<typeof Excalidraw>[0]['onChange']}
           theme={excalidrawTheme}
           UIOptions={{
             canvasActions: {

@@ -22,7 +22,15 @@
       "Bash(xxd)",
       "Bash(curl -s http://localhost:5173/)",
       "Bash(kill %1)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(npm list *)",
+      "Bash(wait)",
+      "Bash(timeout 12 npx vite build)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(npx vite *)",
+      "Bash(xargs kill -9)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(lsof -ti tcp:5171 -sTCP:LISTEN)"
     ]
   }
 }

@@ -4,7 +4,7 @@ import { TagPill } from '../Tags/TagPill'
 import type { AnyNote } from '../../types'
 import './QuickOpen.css'
 
-const TYPE_ICON: Record<string, string> = { note: '📄', todo: '✅', dayplan: '📅' }
+const TYPE_ICON: Record<string, string> = { note: '📄', todo: '✅', dayplan: '📅', diagram: '🎨' }
 
 function relDate(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()

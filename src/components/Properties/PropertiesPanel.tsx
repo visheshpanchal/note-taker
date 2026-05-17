@@ -3,7 +3,7 @@ import { useNotes } from '../../contexts/NotesContext'
 import { useUI } from '../../contexts/UIContext'
 import { TagPill } from '../Tags/TagPill'
 import { htmlToMarkdown, downloadFile } from '../../utils/export'
-import type { Note } from '../../types'
+import type { AnyNote } from '../../types'
 import './PropertiesPanel.css'
 
 const COLORS = [
@@ -36,7 +36,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 }
 
 interface PropertiesPanelProps {
-  note: Note
+  note: AnyNote
 }
 
 export function PropertiesPanel({ note }: PropertiesPanelProps) {
@@ -50,8 +50,9 @@ export function PropertiesPanel({ note }: PropertiesPanelProps) {
 
   const notebook = notebooks?.find(nb => nb.id === note.notebookId)
 
-  const wordCount = note.content
-    ? note.content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length
+  const rawContent = 'content' in note ? note.content : ''
+  const wordCount = rawContent
+    ? rawContent.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length
     : 0
   const readingTime = Math.max(1, Math.ceil(wordCount / 200))
 
@@ -80,13 +81,13 @@ export function PropertiesPanel({ note }: PropertiesPanelProps) {
   }
 
   function exportMarkdown() {
-    const md = htmlToMarkdown(note.content || '')
+    const md = htmlToMarkdown(rawContent)
     const filename = `${note.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.md`
     downloadFile(filename, `# ${note.title}\n\n${md}`)
   }
 
   function exportHTML() {
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${note.title}</title></head><body><h1>${note.title}</h1>${note.content || ''}</body></html>`
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${note.title}</title></head><body><h1>${note.title}</h1>${rawContent}</body></html>`
     downloadFile(`${note.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.html`, html, 'text/html')
   }
 
