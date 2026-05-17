@@ -1,0 +1,84 @@
+.diagram-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.diagram-editor__color-strip {
+  height: 4px;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.diagram-editor__header {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.diagram-editor__header-inner {
+  padding: 16px 24px 12px;
+}
+
+.diagram-editor__title {
+  display: block;
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.diagram-editor__title::placeholder {
+  color: var(--text-tertiary);
+}
+
+.diagram-editor__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.diagram-editor__cat-select {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 3px 10px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.diagram-editor__cat-select--set {
+  background: color-mix(in srgb, var(--cat) 12%, transparent);
+  border-color: color-mix(in srgb, var(--cat) 40%, transparent);
+  color: var(--cat);
+  font-weight: 600;
+}
+
+.diagram-editor__hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.diagram-editor__canvas {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.diagram-editor__canvas .excalidraw {
+  height: 100%;
+  border-radius: 0;
+}
+
+.diagram-editor__canvas .excalidraw,
+.diagram-editor__canvas .excalidraw-container {
+  height: 100%;
+}

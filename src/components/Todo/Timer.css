@@ -1,0 +1,114 @@
+.timer {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.timer__display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.timer__ring {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timer__svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+}
+
+.timer__track {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 2.5;
+}
+
+.timer__fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+
+.timer--running .timer__fill { stroke: var(--success); }
+.timer--finished .timer__fill { stroke: var(--danger); }
+
+.timer__time {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-secondary);
+  z-index: 1;
+  line-height: 1;
+}
+.timer--running .timer__time { color: var(--success); }
+.timer--finished .timer__time { color: var(--danger); }
+
+.timer__controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.timer__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: all var(--transition);
+  background: transparent;
+}
+.timer__btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.timer__btn--start { color: var(--success); }
+.timer__btn--start:hover { background: rgba(52,199,89,0.12); color: var(--success); }
+.timer__btn--pause { color: var(--warning); }
+.timer__btn--pause:hover { background: rgba(255,149,0,0.12); color: var(--warning); }
+.timer__btn--set {
+  padding: 0 8px;
+  width: auto;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: 11px;
+  font-weight: 500;
+}
+.timer__btn--set:hover { background: var(--accent-hover); }
+
+.timer__edit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+}
+
+.timer__input {
+  width: 32px;
+  text-align: center;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+.timer__input:focus { outline: 1px solid var(--accent); }
+.timer__input::-webkit-inner-spin-button,
+.timer__input::-webkit-outer-spin-button { opacity: 0; }

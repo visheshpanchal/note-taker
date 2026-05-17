@@ -1,0 +1,102 @@
+.app {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  position: relative;
+}
+
+.main-content__editor {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content--loading,
+.main-content--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+}
+
+/* ── Sidebar reveal tab ────────────────────────── */
+.sidebar-tab {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  width: 16px;
+  height: 52px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease;
+}
+.sidebar-tab:hover {
+  width: 26px;
+  color: var(--accent);
+  background: var(--bg-tertiary);
+}
+
+/* ── Loading ───────────────────────────────────── */
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Empty state ───────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 48px 32px;
+  max-width: 360px;
+}
+.empty-state__icon {
+  font-size: 56px;
+  margin-bottom: 20px;
+  opacity: 0.22;
+  filter: grayscale(0.3);
+}
+.empty-state h2 {
+  font-size: 22px;
+  font-weight: 650;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+  letter-spacing: -0.4px;
+}
+.empty-state p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.empty-state__hint { margin-top: 10px !important; }
+.empty-state kbd {
+  font-family: var(--font);
+  font-size: 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  padding: 1px 6px;
+  color: var(--text-secondary);
+}
