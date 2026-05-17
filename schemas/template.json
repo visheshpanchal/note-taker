@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "notetaker/template",
+  "$id": "notetaker/template/v1",
   "title": "Template",
   "description": "A Day Plan template for NoteTaker. Stored as an array in templates.json inside the user's storage directory. Each template defines the section layout that is instantiated when the user creates a new Day Plan.",
   "type": "object",
@@ -85,6 +85,13 @@
   },
 
   "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Schema version for this template object. Omitting this field is equivalent to version 1. Increment this when the shape of the template object changes in a breaking way so the app can run the appropriate migration.\n\nVersion history:\n  1 — initial shape: id, name, isBuiltIn, description, color?, sections (text | priorities | checklist | timeblocks)."
+    },
+
     "id": {
       "type": "string",
       "description": "Unique, stable identifier. Use kebab-case. Built-in templates use the prefix 'built-in-'.",
@@ -126,6 +133,7 @@
 
   "examples": [
     {
+      "schemaVersion": 1,
       "id": "built-in-productive-day",
       "name": "Productive Day",
       "isBuiltIn": true,
@@ -162,6 +170,7 @@
       ]
     },
     {
+      "schemaVersion": 1,
       "id": "deep-work",
       "name": "Deep Work",
       "isBuiltIn": false,
@@ -199,6 +208,7 @@
       ]
     },
     {
+      "schemaVersion": 1,
       "id": "weekly-review",
       "name": "Weekly Review",
       "isBuiltIn": false,
