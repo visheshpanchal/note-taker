@@ -1,508 +1,274 @@
-const { app, BrowserWindow, ipcMain, shell, nativeTheme, dialog, Notification, protocol, net } = require('electron')
+'use strict'
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeTheme, Notification } = require('electron')
 const path = require('path')
 const fs = require('fs')
-const os = require('os')
-const { v4: uuidv4 } = require('uuid')
-
-// Must register custom schemes before app is ready
-protocol.registerSchemesAsPrivileged([{
-  scheme: 'attachment',
-  privileges: { secure: true, standard: true, supportFetchAPI: true }
-}])
+const crypto = require('crypto')
 
 const isDev = process.env.NODE_ENV === 'development'
 
+// ─── Storage paths ────────────────────────────────────────────────────────────
+
 function getDefaultStoragePath() {
-  const platform = process.platform
-  const base = platform === 'linux'
-    ? path.join(os.homedir(), 'NoteTaker')
-    : path.join(os.homedir(), 'Documents', 'NoteTaker')
-  if (!fs.existsSync(base)) fs.mkdirSync(base, { recursive: true })
-  return base
+  return path.join(app.getPath('userData'), 'notes')
 }
 
-// ─── Config: persists the active storage path across relaunches ──────────────
-function getConfigPath() {
-  try { return path.join(app.getPath('userData'), 'notetaker-config.json') }
-  catch { return path.join(os.homedir(), '.notetaker-config.json') }
-}
-
-function readConfig() {
-  try {
-    const p = getConfigPath()
-    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf-8'))
-  } catch {}
-  return {}
-}
-
-function writeConfig(patch) {
-  try {
-    const p = getConfigPath()
-    const current = readConfig()
-    fs.writeFileSync(p, JSON.stringify({ ...current, ...patch }, null, 2), 'utf-8')
-  } catch {}
-}
-
-function getEffectiveStoragePath() {
-  const cfg = readConfig()
-  const custom = cfg.storagePath
-  // Only use custom path if the directory actually exists
-  if (custom && fs.existsSync(custom)) return custom
-  const def = getDefaultStoragePath()
-  writeConfig({ storagePath: def }) // seed config on first run
-  return def
-}
-
-function getNotesFilePath(storagePath) {
+function notesFilePath(storagePath) {
   return path.join(storagePath, 'notes.json')
 }
 
-// ─── Subdirectory helpers ────────────────────────────────────────────────────
-function getSubDir(storagePath, name) {
-  const dir = path.join(storagePath, name)
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  return dir
+function templatesFilePath(storagePath) {
+  return path.join(storagePath, 'templates.json')
 }
 
-function readJsonDir(dir) {
-  try {
-    return fs.readdirSync(dir)
-      .filter(f => f.endsWith('.json'))
-      .map(f => {
-        try { return JSON.parse(fs.readFileSync(path.join(dir, f), 'utf-8')) }
-        catch { return null }
-      })
-      .filter(Boolean)
-  } catch { return [] }
+function themesFilePath(storagePath) {
+  return path.join(storagePath, 'themes.json')
 }
 
-function writeJsonFile(dir, id, obj) {
-  fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify(obj, null, 2), 'utf-8')
+function attachmentsDir(storagePath, noteId) {
+  return path.join(storagePath, 'attachments', noteId)
 }
 
-function deleteJsonFile(dir, id) {
-  const p = path.join(dir, `${id}.json`)
-  if (fs.existsSync(p)) fs.unlinkSync(p)
+function ensureDir(dirPath) {
+  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true })
 }
 
-// ─── Attachment helpers ──────────────────────────────────────────────────────
-const ATTACHMENT_MAX_BYTES = 100 * 1024 * 1024
+// ─── Data helpers ─────────────────────────────────────────────────────────────
 
-function getMimeType(filename) {
-  const ext = path.extname(filename).toLowerCase()
-  const MAP = {
-    '.pdf': 'application/pdf',
-    '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-    '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml',
-    '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime',
-    '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg',
-    '.txt': 'text/plain', '.md': 'text/markdown',
-    '.doc': 'application/msword',
-    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    '.xls': 'application/vnd.ms-excel',
-    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    '.zip': 'application/zip', '.json': 'application/json',
-  }
-  return MAP[ext] || 'application/octet-stream'
+function readJson(filePath) {
+  if (!fs.existsSync(filePath)) return null
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'))
 }
 
-function getAttachDir(storagePath, noteId) {
-  const dir = path.join(storagePath, 'attachments', noteId)
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  return dir
+function writeJson(filePath, data) {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8')
 }
 
-function uniqueFilename(dir, filename) {
-  const ext = path.extname(filename)
-  const base = path.basename(filename, ext)
-  let candidate = filename
-  let i = 1
-  while (fs.existsSync(path.join(dir, candidate))) {
-    candidate = `${base} (${i})${ext}`
-    i++
-  }
-  return candidate
+// Tracks the user's chosen storage location across IPC calls
+let currentStoragePath = null
+
+function resolveStoragePath(data) {
+  return data?.settings?.storageLocation || currentStoragePath || getDefaultStoragePath()
 }
 
-// ─── Built-in Templates ──────────────────────────────────────────────────────
-const BUILT_IN_TEMPLATES = [
-  {
-    id: 'built-in-productive-day', name: 'Productive Day', isBuiltIn: true,
-    description: 'A balanced daily planning template with priorities, schedule, and habit tracking.',
-    color: '#007aff',
-    sections: [
-      { key: 'intentions', label: '🌅 Morning Intentions', type: 'text', description: 'What matters most today?', config: {} },
-      { key: 'priorities',  label: '🎯 Top 3 Priorities',  type: 'priorities', description: 'The three most important things.', config: { count: 3 } },
-      { key: 'schedule',    label: '📅 Schedule',          type: 'timeblocks', description: 'Block out your day.', config: { startTime: '08:00', endTime: '21:00', interval: 60 } },
-      { key: 'habits',      label: '✅ Daily Habits',      type: 'checklist',  description: 'Track your daily habits.', config: { defaultItems: ['Hydrate (8 glasses)','Exercise / Move','Meditate','Read (30 min)','No screens after 9 pm'] } },
-      { key: 'notes',       label: '💡 Notes & Ideas',     type: 'text',       description: 'Capture thoughts and ideas.', config: {} },
-      { key: 'review',      label: '🌙 Evening Review',    type: 'text',       description: 'What went well?', config: {} }
-    ]
-  },
-  {
-    id: 'built-in-deep-focus', name: 'Deep Focus', isBuiltIn: true,
-    description: 'Minimal template for deep work sessions with time blocks and one clear goal.',
-    color: '#ff9500',
-    sections: [
-      { key: 'main_goal',  label: '🏆 Main Goal',               type: 'text',       description: 'The one thing that will make today a success.', config: {} },
-      { key: 'schedule',   label: '⏱ Time Blocks',              type: 'timeblocks', description: 'Plan focused work blocks.', config: { startTime: '09:00', endTime: '18:00', interval: 90 } },
-      { key: 'blockers',   label: '🚧 Blockers & Distractions', type: 'checklist',  description: 'What might pull you off track.', config: { defaultItems: [] } },
-      { key: 'wins',       label: '🎉 End-of-Day Wins',         type: 'priorities', description: 'What did you accomplish?', config: { count: 3 } }
-    ]
-  }
-]
+// ─── Window ───────────────────────────────────────────────────────────────────
 
-// ─── Built-in Themes ─────────────────────────────────────────────────────────
-const BUILT_IN_THEMES = [
-  {
-    id: 'default-light', name: 'Default Light', mode: 'light', isBuiltIn: true,
-    description: 'Clean white interface with indigo-blue accents',
-    tokens: {
-      '--bg-primary':'#ffffff','--bg-secondary':'#f4f4f8','--bg-tertiary':'#eaeaef',
-      '--bg-hover':'#e0e0e8','--bg-sidebar':'#f0f0f5',
-      '--text-primary':'#111118','--text-secondary':'#56565f','--text-muted':'#9898a8',
-      '--border':'#e2e2ea','--border-strong':'#c8c8d4',
-      '--accent':'#5b6af8','--accent-hover':'#4656e8','--accent-fg':'#ffffff',
-      '--accent-soft':'rgba(91,106,248,0.10)',
-      '--danger':'#ef4444','--danger-hover':'#dc2626','--success':'#22c55e','--warning':'#f59e0b',
-      '--shadow-xs':'0 1px 2px rgba(0,0,0,0.04)',
-      '--shadow-sm':'0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
-      '--shadow-md':'0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)',
-      '--shadow-lg':'0 8px 28px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06)'
-    }
-  },
-  {
-    id: 'default-dark', name: 'Default Dark', mode: 'dark', isBuiltIn: true,
-    description: 'Sleek dark interface with purple-blue accents',
-    tokens: {
-      '--bg-primary':'#111113','--bg-secondary':'#18181c','--bg-tertiary':'#222228',
-      '--bg-hover':'#2c2c35','--bg-sidebar':'#141418',
-      '--text-primary':'#f0f0f8','--text-secondary':'#9090a0','--text-muted':'#55555f',
-      '--border':'#2c2c38','--border-strong':'#404050',
-      '--accent':'#7080ff','--accent-hover':'#8090ff','--accent-fg':'#ffffff',
-      '--accent-soft':'rgba(112,128,255,0.14)',
-      '--danger':'#f87171','--danger-hover':'#fc8181','--success':'#4ade80','--warning':'#fbbf24',
-      '--shadow-xs':'0 1px 2px rgba(0,0,0,0.20)',
-      '--shadow-sm':'0 1px 3px rgba(0,0,0,0.30)',
-      '--shadow-md':'0 4px 12px rgba(0,0,0,0.40)',
-      '--shadow-lg':'0 8px 28px rgba(0,0,0,0.50)'
-    }
-  },
-  {
-    id: 'midnight', name: 'Midnight', mode: 'dark', isBuiltIn: true,
-    description: 'Deep blue-black with violet accents',
-    tokens: {
-      '--bg-primary':'#0a0a14','--bg-secondary':'#0f0f1e','--bg-tertiary':'#151528',
-      '--bg-hover':'#1e1e38','--bg-sidebar':'#0d0d1a',
-      '--text-primary':'#e8e8ff','--text-secondary':'#9090c0','--text-muted':'#505080',
-      '--border':'#1e1e38','--border-strong':'#2a2a50',
-      '--accent':'#a78bfa','--accent-hover':'#b99ffd','--accent-fg':'#ffffff',
-      '--accent-soft':'rgba(167,139,250,0.14)',
-      '--danger':'#f87171','--danger-hover':'#fc8181','--success':'#4ade80','--warning':'#fbbf24',
-      '--shadow-xs':'0 1px 2px rgba(0,0,0,0.35)',
-      '--shadow-sm':'0 1px 3px rgba(0,0,0,0.45)',
-      '--shadow-md':'0 4px 12px rgba(0,0,0,0.55)',
-      '--shadow-lg':'0 8px 28px rgba(0,0,0,0.65)'
-    }
-  },
-  {
-    id: 'sepia', name: 'Sepia', mode: 'light', isBuiltIn: true,
-    description: 'Warm paper tones, easy on the eyes',
-    tokens: {
-      '--bg-primary':'#faf6f0','--bg-secondary':'#f5ede0','--bg-tertiary':'#ede2ce',
-      '--bg-hover':'#e5d5ba','--bg-sidebar':'#f2e8d6',
-      '--text-primary':'#2c1a0e','--text-secondary':'#6b4c2e','--text-muted':'#a0816a',
-      '--border':'#e0d0b8','--border-strong':'#c8b090',
-      '--accent':'#a0522d','--accent-hover':'#8b3d1a','--accent-fg':'#ffffff',
-      '--accent-soft':'rgba(160,82,45,0.12)',
-      '--danger':'#c0392b','--danger-hover':'#a93226','--success':'#27ae60','--warning':'#d68910',
-      '--shadow-xs':'0 1px 2px rgba(80,40,0,0.06)',
-      '--shadow-sm':'0 1px 3px rgba(80,40,0,0.10), 0 1px 2px rgba(80,40,0,0.06)',
-      '--shadow-md':'0 4px 12px rgba(80,40,0,0.12), 0 2px 4px rgba(80,40,0,0.07)',
-      '--shadow-lg':'0 8px 28px rgba(80,40,0,0.16), 0 4px 8px rgba(80,40,0,0.10)'
-    }
-  },
-  {
-    id: 'nord', name: 'Nord', mode: 'dark', isBuiltIn: true,
-    description: 'Arctic north-bluish color palette',
-    tokens: {
-      '--bg-primary':'#2e3440','--bg-secondary':'#3b4252','--bg-tertiary':'#434c5e',
-      '--bg-hover':'#4c566a','--bg-sidebar':'#252a33',
-      '--text-primary':'#eceff4','--text-secondary':'#d8dee9','--text-muted':'#81a1c1',
-      '--border':'#3b4252','--border-strong':'#4c566a',
-      '--accent':'#88c0d0','--accent-hover':'#9ecfdf','--accent-fg':'#2e3440',
-      '--accent-soft':'rgba(136,192,208,0.14)',
-      '--danger':'#bf616a','--danger-hover':'#d0727b','--success':'#a3be8c','--warning':'#ebcb8b',
-      '--shadow-xs':'0 1px 2px rgba(0,0,0,0.25)',
-      '--shadow-sm':'0 1px 3px rgba(0,0,0,0.35)',
-      '--shadow-md':'0 4px 12px rgba(0,0,0,0.45)',
-      '--shadow-lg':'0 8px 28px rgba(0,0,0,0.55)'
-    }
-  },
-  {
-    id: 'forest', name: 'Forest', mode: 'dark', isBuiltIn: true,
-    description: 'Deep green woodland tones',
-    tokens: {
-      '--bg-primary':'#0d1a0f','--bg-secondary':'#122015','--bg-tertiary':'#18291b',
-      '--bg-hover':'#1f3323','--bg-sidebar':'#0f1c12',
-      '--text-primary':'#d8f0d0','--text-secondary':'#88b880','--text-muted':'#4a7050',
-      '--border':'#1f3323','--border-strong':'#2a4030',
-      '--accent':'#4ade80','--accent-hover':'#65e895','--accent-fg':'#0d1a0f',
-      '--accent-soft':'rgba(74,222,128,0.12)',
-      '--danger':'#f87171','--danger-hover':'#fc8181','--success':'#4ade80','--warning':'#fbbf24',
-      '--shadow-xs':'0 1px 2px rgba(0,0,0,0.30)',
-      '--shadow-sm':'0 1px 3px rgba(0,0,0,0.40)',
-      '--shadow-md':'0 4px 12px rgba(0,0,0,0.50)',
-      '--shadow-lg':'0 8px 28px rgba(0,0,0,0.60)'
-    }
-  }
-]
-
-function seedBuiltInTemplates(dir) {
-  for (const t of BUILT_IN_TEMPLATES) {
-    const p = path.join(dir, `${t.id}.json`)
-    if (!fs.existsSync(p)) fs.writeFileSync(p, JSON.stringify(t, null, 2), 'utf-8')
-  }
-}
-
-function seedBuiltInThemes(dir) {
-  for (const t of BUILT_IN_THEMES) {
-    const p = path.join(dir, `${t.id}.json`)
-    if (!fs.existsSync(p)) fs.writeFileSync(p, JSON.stringify(t, null, 2), 'utf-8')
-  }
-}
-
-// ─── Notes storage ───────────────────────────────────────────────────────────
-function createDefaultData(storagePath) {
-  return {
-    $schema: 'https://json-schema.org/draft-07/schema',
-    version: 1,
-    settings: { theme: 'system', storageLocation: storagePath },
-    notes: [],
-    customFields: {},
-    metadata: { createdAt: new Date().toISOString(), lastModified: new Date().toISOString() }
-  }
-}
-
-function loadData(storagePath) {
-  const file = getNotesFilePath(storagePath)
-  if (!fs.existsSync(file)) {
-    const data = createDefaultData(storagePath)
-    fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8')
-    return data
-  }
-  try { return JSON.parse(fs.readFileSync(file, 'utf-8')) }
-  catch { return createDefaultData(storagePath) }
-}
-
-function saveData(storagePath, data) {
-  const file = getNotesFilePath(storagePath)
-  const updated = { ...data, metadata: { ...data.metadata, lastModified: new Date().toISOString() } }
-  fs.writeFileSync(file, JSON.stringify(updated, null, 2), 'utf-8')
-  return { success: true }
-}
-
-let mainWindow
+let mainWindow = null
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1280, height: 800, minWidth: 900, minHeight: 600,
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    width: 1280,
+    height: 800,
+    minWidth: 800,
+    minHeight: 600,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
-      nodeIntegration: false
-    }
+      nodeIntegration: false,
+    },
+    titleBarStyle: 'hiddenInset',
+    show: false,
   })
-  if (isDev) mainWindow.loadURL('http://localhost:5173')
-  else mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
+
+  if (isDev) {
+    mainWindow.loadURL('http://localhost:5173')
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
+  }
+
+  mainWindow.once('ready-to-show', () => mainWindow.show())
+  mainWindow.on('closed', () => { mainWindow = null })
 }
 
-// ─── IPC: Notes ──────────────────────────────────────────────────────────────
+// ─── IPC: data ────────────────────────────────────────────────────────────────
+
 ipcMain.handle('data:load', () => {
-  const sp = getEffectiveStoragePath()
-  seedBuiltInTemplates(getSubDir(sp, 'templates'))
-  seedBuiltInThemes(getSubDir(sp, 'themes'))
-  return loadData(sp)
+  const storagePath = currentStoragePath || getDefaultStoragePath()
+  return readJson(notesFilePath(storagePath))
 })
 
 ipcMain.handle('data:save', (_, data) => {
-  const sp = getEffectiveStoragePath()
-  return saveData(sp, data)
-})
-
-ipcMain.handle('system:info', () => {
-  const sp = getEffectiveStoragePath()
-  return {
-    platform: process.platform,
-    locale: app.getLocale(),
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    storagePath: sp,
-    notesFilePath: getNotesFilePath(sp),
-    templatesPath: getSubDir(sp, 'templates'),
-    themesPath: getSubDir(sp, 'themes'),
-    homedir: os.homedir(),
-    systemTheme: nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
+  try {
+    const storagePath = resolveStoragePath(data)
+    if (data?.settings?.storageLocation) currentStoragePath = data.settings.storageLocation
+    ensureDir(storagePath)
+    writeJson(notesFilePath(storagePath), data)
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e.message }
   }
 })
 
-ipcMain.handle('shell:openPath', (_, p) => shell.openPath(p))
+// ─── IPC: system ──────────────────────────────────────────────────────────────
 
-ipcMain.handle('dialog:pickFolder', async () => {
+ipcMain.handle('system:getInfo', () => {
+  const storagePath = currentStoragePath || getDefaultStoragePath()
+  return {
+    storagePath,
+    notesFilePath: notesFilePath(storagePath),
+    templatesPath: templatesFilePath(storagePath),
+    themesPath: themesFilePath(storagePath),
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  }
+})
+
+ipcMain.handle('system:pickFolder', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory', 'createDirectory'],
-    title: 'Choose storage location for NoteTaker'
   })
   return result.canceled ? null : result.filePaths[0]
 })
 
-ipcMain.handle('data:move', (_, { oldPath, newPath }) => {
-  if (!fs.existsSync(newPath)) fs.mkdirSync(newPath, { recursive: true })
-  const oldFile = getNotesFilePath(oldPath)
-  let data
-  if (fs.existsSync(oldFile)) {
-    try { data = JSON.parse(fs.readFileSync(oldFile, 'utf-8')) }
-    catch { data = createDefaultData(newPath) }
-  } else {
-    data = createDefaultData(newPath)
+ipcMain.handle('system:openPath', (_, p) => shell.openPath(p))
+
+ipcMain.handle('system:moveData', async (_, oldPath, newPath) => {
+  try {
+    ensureDir(newPath)
+    for (const file of ['notes.json', 'templates.json', 'themes.json']) {
+      const src = path.join(oldPath, file)
+      if (fs.existsSync(src)) fs.copyFileSync(src, path.join(newPath, file))
+    }
+    const srcAttach = path.join(oldPath, 'attachments')
+    if (fs.existsSync(srcAttach)) {
+      fs.cpSync(srcAttach, path.join(newPath, 'attachments'), { recursive: true })
+    }
+    currentStoragePath = newPath
+    const data = readJson(notesFilePath(newPath))
+    if (data) {
+      data.settings = { ...data.settings, storageLocation: newPath }
+      writeJson(notesFilePath(newPath), data)
+    }
+    return { success: true, data }
+  } catch (e) {
+    return { success: false, error: e.message }
   }
-  data.settings = { ...data.settings, storageLocation: newPath }
-  data.metadata = { ...data.metadata, lastModified: new Date().toISOString() }
-  fs.writeFileSync(getNotesFilePath(newPath), JSON.stringify(data, null, 2), 'utf-8')
-  if (oldPath !== newPath && fs.existsSync(oldFile)) fs.unlinkSync(oldFile)
-  // Persist the new path so it survives app relaunches
-  writeConfig({ storagePath: newPath })
-  seedBuiltInTemplates(getSubDir(newPath, 'templates'))
-  seedBuiltInThemes(getSubDir(newPath, 'themes'))
-  return { success: true, data, newPath }
 })
 
-// ─── IPC: Templates ──────────────────────────────────────────────────────────
+// ─── IPC: templates ───────────────────────────────────────────────────────────
+
 ipcMain.handle('templates:load', (_, storagePath) => {
-  const sp = storagePath || getDefaultStoragePath()
-  const dir = getSubDir(sp, 'templates')
-  seedBuiltInTemplates(dir)
-  return readJsonDir(dir)
+  return readJson(templatesFilePath(storagePath)) ?? []
 })
 
-ipcMain.handle('templates:save', (_, { storagePath, template }) => {
-  const sp = storagePath || getDefaultStoragePath()
-  const dir = getSubDir(sp, 'templates')
-  writeJsonFile(dir, template.id, template)
-  return { success: true }
+ipcMain.handle('templates:save', (_, storagePath, template) => {
+  ensureDir(storagePath)
+  const fp = templatesFilePath(storagePath)
+  const list = readJson(fp) ?? []
+  const idx = list.findIndex(t => t.id === template.id)
+  if (idx >= 0) list[idx] = template
+  else list.push(template)
+  writeJson(fp, list)
 })
 
-ipcMain.handle('templates:delete', (_, { storagePath, id }) => {
-  const sp = storagePath || getDefaultStoragePath()
-  const dir = getSubDir(sp, 'templates')
-  deleteJsonFile(dir, id)
-  return { success: true }
+ipcMain.handle('templates:delete', (_, storagePath, id) => {
+  const fp = templatesFilePath(storagePath)
+  const list = readJson(fp) ?? []
+  writeJson(fp, list.filter(t => t.id !== id))
 })
 
-// ─── IPC: Themes ─────────────────────────────────────────────────────────────
+// ─── IPC: themes ──────────────────────────────────────────────────────────────
+
 ipcMain.handle('themes:load', (_, storagePath) => {
-  const sp = storagePath || getDefaultStoragePath()
-  const dir = getSubDir(sp, 'themes')
-  seedBuiltInThemes(dir)
-  return readJsonDir(dir)
+  return readJson(themesFilePath(storagePath)) ?? []
 })
 
-ipcMain.handle('themes:save', (_, { storagePath, theme }) => {
-  const sp = storagePath || getDefaultStoragePath()
-  const dir = getSubDir(sp, 'themes')
-  writeJsonFile(dir, theme.id, theme)
-  return { success: true }
+ipcMain.handle('themes:save', (_, storagePath, theme) => {
+  ensureDir(storagePath)
+  const fp = themesFilePath(storagePath)
+  const list = readJson(fp) ?? []
+  const idx = list.findIndex(t => t.id === theme.id)
+  if (idx >= 0) list[idx] = theme
+  else list.push(theme)
+  writeJson(fp, list)
 })
 
-ipcMain.handle('themes:delete', (_, { storagePath, id }) => {
-  const sp = storagePath || getDefaultStoragePath()
-  const dir = getSubDir(sp, 'themes')
-  deleteJsonFile(dir, id)
-  return { success: true }
+ipcMain.handle('themes:delete', (_, storagePath, id) => {
+  const fp = themesFilePath(storagePath)
+  const list = readJson(fp) ?? []
+  writeJson(fp, list.filter(t => t.id !== id))
 })
 
-// ─── Notifications ───────────────────────────────────────────────────────────
-ipcMain.handle('notification:show', (_, { title, body, noteId }) => {
-  if (!Notification.isSupported()) return { success: false }
-  const n = new Notification({ title, body, silent: false })
-  n.on('click', () => {
+// ─── IPC: notifications ───────────────────────────────────────────────────────
+
+ipcMain.on('notifications:show', (_, opts) => {
+  if (!Notification.isSupported()) return
+  const notif = new Notification({ title: opts.title, body: opts.body })
+  notif.on('click', () => {
     if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore()
       mainWindow.show()
       mainWindow.focus()
-      mainWindow.webContents.send('note:focus', noteId)
+      mainWindow.webContents.send('note:focus', opts.noteId)
     }
   })
-  n.show()
-  return { success: true }
+  notif.show()
 })
 
-// ─── IPC: Attachments ────────────────────────────────────────────────────────
-ipcMain.handle('dialog:pickFiles', async () => {
+// ─── IPC: attachments ─────────────────────────────────────────────────────────
+
+function mimeType(ext) {
+  const map = {
+    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+    '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml',
+    '.pdf': 'application/pdf', '.txt': 'text/plain', '.md': 'text/markdown',
+    '.mp4': 'video/mp4', '.mp3': 'audio/mpeg', '.wav': 'audio/wav',
+    '.zip': 'application/zip',
+  }
+  return map[ext.toLowerCase()] || 'application/octet-stream'
+}
+
+ipcMain.handle('attachments:pickFiles', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile', 'multiSelections'],
-    title: 'Attach files'
   })
   return result.canceled ? [] : result.filePaths
 })
 
-ipcMain.handle('attachments:add', (_, { noteId, filePaths }) => {
-  const sp = getEffectiveStoragePath()
-  const dir = getAttachDir(sp, noteId)
+ipcMain.handle('attachments:add', (_, noteId, filePaths) => {
+  const storagePath = currentStoragePath || getDefaultStoragePath()
+  const dir = attachmentsDir(storagePath, noteId)
+  ensureDir(dir)
   const added = []
   for (const src of filePaths) {
     try {
-      const stat = fs.statSync(src)
-      if (stat.size > ATTACHMENT_MAX_BYTES) continue
       const originalName = path.basename(src)
-      const filename = uniqueFilename(dir, originalName)
-      fs.copyFileSync(src, path.join(dir, filename))
-      added.push({
-        id: uuidv4(), filename, originalName,
-        mimeType: getMimeType(filename), size: stat.size,
-        attachedAt: new Date().toISOString()
-      })
+      const ext = path.extname(originalName)
+      const stem = path.basename(originalName, ext)
+      const filename = `${stem}-${crypto.randomUUID().slice(0, 8)}${ext}`
+      const dst = path.join(dir, filename)
+      fs.copyFileSync(src, dst)
+      const { size } = fs.statSync(dst)
+      added.push({ id: crypto.randomUUID(), filename, originalName, mimeType: mimeType(ext), size })
     } catch (e) {
-      console.error('[attachments:add] failed for', src, e.message)
+      console.error('Failed to copy attachment:', e)
     }
   }
   return { success: true, added }
 })
 
-ipcMain.handle('attachments:remove', (_, { noteId, filename }) => {
-  const sp = getEffectiveStoragePath()
-  const filePath = path.join(getAttachDir(sp, noteId), filename)
-  try {
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
-    return { success: true }
-  } catch (e) { return { success: false, error: e.message } }
+ipcMain.handle('attachments:remove', (_, noteId, filename) => {
+  const storagePath = currentStoragePath || getDefaultStoragePath()
+  const fp = path.join(attachmentsDir(storagePath, noteId), filename)
+  if (fs.existsSync(fp)) fs.unlinkSync(fp)
 })
 
-ipcMain.handle('attachments:open', (_, { noteId, filename }) => {
-  const sp = getEffectiveStoragePath()
-  shell.openPath(path.join(getAttachDir(sp, noteId), filename))
-  return { success: true }
+ipcMain.on('attachments:open', (_, noteId, filename) => {
+  const storagePath = currentStoragePath || getDefaultStoragePath()
+  shell.openPath(path.join(attachmentsDir(storagePath, noteId), filename))
 })
 
-// ─── Native theme ─────────────────────────────────────────────────────────────
+// ─── System theme events ──────────────────────────────────────────────────────
+
 nativeTheme.on('updated', () => {
   if (mainWindow) {
-    mainWindow.webContents.send('theme:system-changed', nativeTheme.shouldUseDarkColors ? 'dark' : 'light')
+    mainWindow.webContents.send(
+      'system:themeChange',
+      nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
+    )
   }
 })
 
+// ─── App lifecycle ────────────────────────────────────────────────────────────
+
 app.whenReady().then(() => {
-  protocol.handle('attachment', (request) => {
-    const url = new URL(request.url)
-    const noteId = url.hostname
-    const filename = decodeURIComponent(url.pathname.slice(1))
-    const sp = getEffectiveStoragePath()
-    const filePath = path.join(sp, 'attachments', noteId, filename)
-    const fileUrl = process.platform === 'win32'
-      ? `file:///${filePath.replace(/\\/g, '/')}`
-      : `file://${filePath}`
-    return net.fetch(fileUrl)
-  })
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

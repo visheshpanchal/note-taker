@@ -1,0 +1,253 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "notetaker/template/v1",
+  "title": "Template",
+  "description": "A Day Plan template for NoteTaker. Stored as an array in templates.json inside the user's storage directory. Each template defines the section layout that is instantiated when the user creates a new Day Plan.",
+  "type": "object",
+  "required": ["id", "name", "isBuiltIn", "description", "sections"],
+  "additionalProperties": false,
+
+  "definitions": {
+
+    "SectionType": {
+      "type": "string",
+      "enum": ["text", "priorities", "checklist", "timeblocks"],
+      "description": "Determines which editor component renders this section and what its `items` type will be at runtime.\n\n• text        — a freeform rich-text area. No items.\n• priorities  — a numbered priority list (P1/P2/P3). Items are PriorityItem.\n• checklist   — a simple checked/unchecked task list. Items are ChecklistItem.\n• timeblocks  — a time-grid schedule. Items are TimeBlock."
+    },
+
+    "SectionConfig": {
+      "type": "object",
+      "description": "Optional hints used when instantiating a section from this definition. All fields are optional.",
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of blank items to pre-populate when this section is first created. Applies to priorities, checklist, and timeblocks."
+        },
+        "defaultItems": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Text labels for the initial items. If provided, overrides `count`. Applies to priorities and checklist."
+        },
+        "startTime": {
+          "type": "string",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+          "description": "Start time for the timeblocks grid in HH:MM (24-hour) format.",
+          "examples": ["07:00", "09:00"]
+        },
+        "endTime": {
+          "type": "string",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+          "description": "End time for the timeblocks grid in HH:MM (24-hour) format.",
+          "examples": ["18:00", "22:00"]
+        },
+        "interval": {
+          "type": "integer",
+          "minimum": 5,
+          "multipleOf": 5,
+          "description": "Time slot duration in minutes for the timeblocks grid.",
+          "examples": [30, 60]
+        }
+      }
+    },
+
+    "TemplateSectionDef": {
+      "type": "object",
+      "description": "Defines one section inside a template.",
+      "required": ["key", "label", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Unique identifier for this section within the template. Used as the React key and for section lookup.",
+          "pattern": "^[a-z0-9_-]+$",
+          "examples": ["morning-priorities", "schedule", "evening-reflection"]
+        },
+        "label": {
+          "type": "string",
+          "description": "Display heading shown at the top of the section card.",
+          "examples": ["🎯 Top Priorities", "📅 Schedule", "✅ Habits"]
+        },
+        "type": {
+          "$ref": "#/definitions/SectionType"
+        },
+        "description": {
+          "type": "string",
+          "description": "Subtitle shown beneath the section label to guide the user.",
+          "examples": ["What are the three most important things to accomplish today?"]
+        },
+        "config": {
+          "$ref": "#/definitions/SectionConfig"
+        }
+      }
+    }
+  },
+
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Schema version for this template object. Omitting this field is equivalent to version 1. Increment this when the shape of the template object changes in a breaking way so the app can run the appropriate migration.\n\nVersion history:\n  1 — initial shape: id, name, isBuiltIn, description, color?, sections (text | priorities | checklist | timeblocks)."
+    },
+
+    "id": {
+      "type": "string",
+      "description": "Unique, stable identifier. Use kebab-case. Built-in templates use the prefix 'built-in-'.",
+      "pattern": "^[a-z0-9-]+$",
+      "examples": ["built-in-productive-day", "deep-work", "weekly-review"]
+    },
+
+    "name": {
+      "type": "string",
+      "description": "Display name shown in the template picker.",
+      "minLength": 1,
+      "examples": ["Productive Day", "Deep Work", "Weekly Review"]
+    },
+
+    "isBuiltIn": {
+      "type": "boolean",
+      "description": "When true the template ships with the app and cannot be deleted by the user.",
+      "default": false
+    },
+
+    "description": {
+      "type": "string",
+      "description": "One-sentence summary of what this template is designed for."
+    },
+
+    "color": {
+      "type": "string",
+      "description": "Optional accent color for this template's card in the picker. Any valid CSS color value.",
+      "examples": ["#5b6af8", "#e11d48", "#16a34a"]
+    },
+
+    "sections": {
+      "type": "array",
+      "description": "Ordered list of section definitions that make up the template. At least one section is required.",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/TemplateSectionDef" }
+    }
+  },
+
+  "examples": [
+    {
+      "schemaVersion": 1,
+      "id": "built-in-productive-day",
+      "name": "Productive Day",
+      "isBuiltIn": true,
+      "description": "A balanced daily planning template with priorities, schedule, and habit tracking.",
+      "color": "#5b6af8",
+      "sections": [
+        {
+          "key": "morning-priorities",
+          "label": "🎯 Top Priorities",
+          "type": "priorities",
+          "description": "The three most important outcomes for today.",
+          "config": { "count": 3 }
+        },
+        {
+          "key": "schedule",
+          "label": "📅 Time Blocks",
+          "type": "timeblocks",
+          "description": "Block your day hour by hour.",
+          "config": { "startTime": "08:00", "endTime": "20:00", "interval": 60 }
+        },
+        {
+          "key": "tasks",
+          "label": "✅ Task List",
+          "type": "checklist",
+          "description": "Everything else that needs to get done.",
+          "config": { "count": 5 }
+        },
+        {
+          "key": "notes",
+          "label": "📝 Notes",
+          "type": "text",
+          "description": "Thoughts, ideas, or anything worth capturing."
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "deep-work",
+      "name": "Deep Work",
+      "isBuiltIn": false,
+      "description": "Minimal template focused on a single deep-work session.",
+      "color": "#0ea5e9",
+      "sections": [
+        {
+          "key": "intention",
+          "label": "🎯 Today's Intention",
+          "type": "text",
+          "description": "One sentence: what does success look like at the end of this session?"
+        },
+        {
+          "key": "focus-blocks",
+          "label": "⏱ Focus Blocks",
+          "type": "timeblocks",
+          "description": "Map your deep work and breaks in 90-minute slots.",
+          "config": { "startTime": "09:00", "endTime": "18:00", "interval": 90 }
+        },
+        {
+          "key": "blockers",
+          "label": "🚧 Potential Blockers",
+          "type": "checklist",
+          "description": "Identify and resolve distractions before they happen.",
+          "config": {
+            "defaultItems": ["Phone silenced", "Notifications off", "Door closed"]
+          }
+        },
+        {
+          "key": "reflection",
+          "label": "💬 End-of-Day Reflection",
+          "type": "text",
+          "description": "What went well? What would you do differently?"
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "weekly-review",
+      "name": "Weekly Review",
+      "isBuiltIn": false,
+      "description": "A structured Friday review to close the week and plan the next.",
+      "color": "#8b5cf6",
+      "sections": [
+        {
+          "key": "wins",
+          "label": "🏆 Wins This Week",
+          "type": "priorities",
+          "description": "Top three things you accomplished.",
+          "config": { "count": 3 }
+        },
+        {
+          "key": "incomplete",
+          "label": "🔄 Carried Over",
+          "type": "checklist",
+          "description": "Tasks that didn't make it — decide: complete, delegate, or drop."
+        },
+        {
+          "key": "learnings",
+          "label": "📚 Learnings",
+          "type": "text",
+          "description": "What did you learn this week, personally or professionally?"
+        },
+        {
+          "key": "next-week",
+          "label": "🗓 Next Week's Priorities",
+          "type": "priorities",
+          "description": "The three outcomes that matter most next week.",
+          "config": { "count": 3 }
+        },
+        {
+          "key": "energy",
+          "label": "⚡ Energy & Health Notes",
+          "type": "text",
+          "description": "Sleep, exercise, mood — track what affects your performance."
+        }
+      ]
+    }
+  ]
+}
