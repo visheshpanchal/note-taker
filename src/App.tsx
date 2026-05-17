@@ -9,7 +9,7 @@ import { DayPlanEditor } from './components/DayPlan/DayPlanEditor'
 import { DiagramEditor } from './components/Diagram/DiagramEditor'
 import { PropertiesPanel } from './components/Properties/PropertiesPanel'
 import { QuickOpen } from './components/Search/QuickOpen'
-import type { Note, Todo, DayPlan, Diagram } from './types'
+import type { Note, Todo, DayPlan, Diagram, AnyNote } from './types'
 import './App.css'
 
 function MainContent() {
@@ -52,8 +52,8 @@ function MainContent() {
         {activeNote.type === 'dayplan' && <DayPlanEditor note={activeNote as DayPlan} key={activeNote.id} />}
         {activeNote.type === 'diagram' && <DiagramEditor note={activeNote as Diagram} key={activeNote.id} />}
       </div>
-      {showProperties && activeNote.type === 'note' && (
-        <PropertiesPanel note={activeNote as Note} />
+      {showProperties && (
+        <PropertiesPanel note={activeNote as AnyNote} />
       )}
     </div>
   )

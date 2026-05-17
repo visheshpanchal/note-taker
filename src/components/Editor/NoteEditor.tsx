@@ -85,7 +85,7 @@ export function NoteEditor({ note }: NoteEditorProps) {
 
   useEffect(() => {
     if (editor && editor.getHTML() !== note.content) {
-      editor.commands.setContent(note.content || '', false)
+      editor.commands.setContent(note.content || '', { emitUpdate: false })
     }
   }, [note.id]) // eslint-disable-line react-hooks/exhaustive-deps
 

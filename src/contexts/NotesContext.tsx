@@ -141,7 +141,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
           if (n.id !== id) return n
           const updated = { ...n, ...patch, updatedAt: new Date().toISOString() } as AnyNote
           if ('reminderAt' in patch && 'reminderAt' in n && patch.reminderAt !== n.reminderAt) {
-            (updated as Record<string, unknown>).reminderNotified = false
+            (updated as unknown as Record<string, unknown>).reminderNotified = false
           }
           return updated
         })

@@ -24,7 +24,7 @@ function setup(notes: ReturnType<typeof makeNote>[]) {
   vi.mocked(useNotes).mockReturnValue({
     notes,
     updateNote: mockUpdateNote,
-  } as ReturnType<typeof useNotes>)
+  } as unknown as ReturnType<typeof useNotes>)
 }
 
 beforeEach(() => {
@@ -117,7 +117,7 @@ describe('useReminderChecker', () => {
 
   it('clears the interval on unmount', () => {
     setup([])
-    const clearSpy = vi.spyOn(global, 'clearInterval')
+    const clearSpy = vi.spyOn(globalThis, 'clearInterval')
     const { unmount } = renderHook(() => useReminderChecker())
     unmount()
     expect(clearSpy).toHaveBeenCalled()
