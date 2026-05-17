@@ -15,7 +15,14 @@
       "Bash(sed -n '140,156p' /Users/visheshpanchal/Documents/note-takinnapp/src/components/DayPlan/DayPlanEditor.css)",
       "Bash(npx vitest *)",
       "Bash(git -C /Users/visheshpanchal/Documents/note-taker log --oneline --format=\"%ad\" --date=format:\"%b %Y\")",
-      "Bash(npm test *)"
+      "Bash(npm test *)",
+      "Bash(xargs ls -la)",
+      "Bash(git *)",
+      "Bash(grep -oP '\\(?<=className=`\\)[^`]+')",
+      "Bash(xxd)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(kill %1)",
+      "Bash(npx tsc *)"
     ]
   }
 }

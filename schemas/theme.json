@@ -1,0 +1,238 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "notetaker/theme",
+  "title": "Theme",
+  "description": "A visual theme for NoteTaker. Stored as an array in themes.json inside the user's storage directory. Each theme overrides a subset of the app's CSS custom properties via the `tokens` map.",
+  "type": "object",
+  "required": ["id", "name", "mode", "isBuiltIn", "description", "tokens"],
+  "additionalProperties": false,
+
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique, stable identifier. Use kebab-case. Built-in themes use the prefix 'built-in-'.",
+      "pattern": "^[a-z0-9-]+$",
+      "examples": ["ocean-dark", "rose-light", "built-in-default"]
+    },
+
+    "name": {
+      "type": "string",
+      "description": "Human-readable display name shown in the theme picker.",
+      "minLength": 1,
+      "examples": ["Ocean Dark", "Rose Light"]
+    },
+
+    "mode": {
+      "type": "string",
+      "enum": ["light", "dark"],
+      "description": "Whether this theme targets a light or dark base. The app switches CSS variable defaults based on this value before applying `tokens`."
+    },
+
+    "isBuiltIn": {
+      "type": "boolean",
+      "description": "When true the theme ships with the app and cannot be deleted by the user.",
+      "default": false
+    },
+
+    "description": {
+      "type": "string",
+      "description": "One-sentence description shown below the theme name in the picker."
+    },
+
+    "tokens": {
+      "type": "object",
+      "description": "Map of CSS custom property names to values. Only the properties you want to override need to be present — all others fall back to the mode defaults defined in index.css.",
+      "additionalProperties": {
+        "type": "string",
+        "description": "Any valid CSS value (hex, rgb, hsl, var(), etc.)"
+      },
+      "properties": {
+        "--bg-primary": {
+          "type": "string",
+          "description": "Main canvas / editor background."
+        },
+        "--bg-secondary": {
+          "type": "string",
+          "description": "Secondary surfaces — toolbar, footer, inner panels."
+        },
+        "--bg-tertiary": {
+          "type": "string",
+          "description": "Tertiary surfaces — code blocks, chip backgrounds, deeply nested items."
+        },
+        "--bg-hover": {
+          "type": "string",
+          "description": "Background applied to interactive elements on hover."
+        },
+        "--bg-sidebar": {
+          "type": "string",
+          "description": "Sidebar / file-explorer background. Often slightly different from --bg-primary."
+        },
+        "--text-primary": {
+          "type": "string",
+          "description": "Default body text color."
+        },
+        "--text-secondary": {
+          "type": "string",
+          "description": "Subdued text — note titles in the list, metadata labels."
+        },
+        "--text-muted": {
+          "type": "string",
+          "description": "Faint text — placeholders, timestamps, keyboard hints."
+        },
+        "--border": {
+          "type": "string",
+          "description": "Default 1 px hairline border color."
+        },
+        "--border-strong": {
+          "type": "string",
+          "description": "Heavier border used for emphasis or focus rings."
+        },
+        "--accent": {
+          "type": "string",
+          "description": "Primary brand / action color. Used for buttons, links, active states."
+        },
+        "--accent-hover": {
+          "type": "string",
+          "description": "Accent color when the pointer hovers over an accented element."
+        },
+        "--accent-fg": {
+          "type": "string",
+          "description": "Foreground (text/icon) color painted on top of an accent-colored surface. Usually white."
+        },
+        "--accent-soft": {
+          "type": "string",
+          "description": "Low-opacity tint of --accent used for selection backgrounds and focus rings. Typically accent at 10–15% opacity."
+        },
+        "--danger": {
+          "type": "string",
+          "description": "Color for destructive actions (delete, error states)."
+        },
+        "--danger-hover": {
+          "type": "string",
+          "description": "Danger color on hover."
+        },
+        "--success": {
+          "type": "string",
+          "description": "Positive / completed state color."
+        },
+        "--warning": {
+          "type": "string",
+          "description": "Warning / in-progress state color."
+        },
+        "--shadow-xs": {
+          "type": "string",
+          "description": "Extra-small box-shadow for subtle lift (note cards at rest)."
+        },
+        "--shadow-sm": {
+          "type": "string",
+          "description": "Small box-shadow (note cards on hover, dropdowns)."
+        },
+        "--shadow-md": {
+          "type": "string",
+          "description": "Medium box-shadow (modals, popovers)."
+        },
+        "--shadow-lg": {
+          "type": "string",
+          "description": "Large box-shadow (full-screen overlays)."
+        },
+        "--radius-xs": {
+          "type": "string",
+          "description": "Extra-small border-radius (4 px by default)."
+        },
+        "--radius-sm": {
+          "type": "string",
+          "description": "Small border-radius (7 px by default)."
+        },
+        "--radius-md": {
+          "type": "string",
+          "description": "Medium border-radius (11 px by default)."
+        },
+        "--radius-lg": {
+          "type": "string",
+          "description": "Large border-radius (16 px by default)."
+        },
+        "--radius-xl": {
+          "type": "string",
+          "description": "Extra-large border-radius (22 px by default)."
+        },
+        "--sidebar-width": {
+          "type": "string",
+          "description": "Pixel width of the sidebar panel.",
+          "examples": ["272px", "300px"]
+        },
+        "--transition": {
+          "type": "string",
+          "description": "Default transition shorthand for micro-interactions.",
+          "examples": [".15s ease"]
+        },
+        "--font": {
+          "type": "string",
+          "description": "Font stack for all UI text.",
+          "examples": ["-apple-system, BlinkMacSystemFont, 'Inter', sans-serif"]
+        },
+        "--font-mono": {
+          "type": "string",
+          "description": "Monospace font stack for code blocks and timestamps.",
+          "examples": ["'JetBrains Mono', 'Fira Code', monospace"]
+        }
+      }
+    }
+  },
+
+  "examples": [
+    {
+      "id": "ocean-dark",
+      "name": "Ocean Dark",
+      "mode": "dark",
+      "isBuiltIn": false,
+      "description": "Deep ocean blues with a teal accent — easy on the eyes for long sessions.",
+      "tokens": {
+        "--bg-primary":    "#0d1117",
+        "--bg-secondary":  "#161b22",
+        "--bg-tertiary":   "#21262d",
+        "--bg-hover":      "#2c333a",
+        "--bg-sidebar":    "#0d1117",
+        "--text-primary":  "#e6edf3",
+        "--text-secondary":"#8b949e",
+        "--text-muted":    "#484f58",
+        "--border":        "#30363d",
+        "--border-strong": "#484f58",
+        "--accent":        "#2ea0a0",
+        "--accent-hover":  "#3dbfbf",
+        "--accent-fg":     "#ffffff",
+        "--accent-soft":   "#2ea0a020",
+        "--danger":        "#f85149",
+        "--danger-hover":  "#ff6a63",
+        "--success":       "#3fb950",
+        "--warning":       "#d29922"
+      }
+    },
+    {
+      "id": "rose-light",
+      "name": "Rose Light",
+      "mode": "light",
+      "isBuiltIn": false,
+      "description": "Warm rose tones with a clean white canvas.",
+      "tokens": {
+        "--bg-primary":    "#ffffff",
+        "--bg-secondary":  "#fff5f5",
+        "--bg-tertiary":   "#ffe4e6",
+        "--bg-hover":      "#fecdd3",
+        "--bg-sidebar":    "#fff1f2",
+        "--text-primary":  "#1c1917",
+        "--text-secondary":"#78716c",
+        "--text-muted":    "#a8a29e",
+        "--border":        "#fda4af",
+        "--border-strong": "#fb7185",
+        "--accent":        "#e11d48",
+        "--accent-hover":  "#be123c",
+        "--accent-fg":     "#ffffff",
+        "--accent-soft":   "#e11d4815",
+        "--danger":        "#dc2626",
+        "--danger-hover":  "#b91c1c",
+        "--success":       "#16a34a",
+        "--warning":       "#d97706"
+      }
+    }
+  ]
+}

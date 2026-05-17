@@ -8,7 +8,7 @@ import { ThemeToggle } from '../shared/ThemeToggle'
 import { SaveIndicator } from '../shared/SaveIndicator'
 import { SettingsModal } from '../Settings/SettingsModal'
 import { TemplateSelector } from '../DayPlan/TemplateSelector'
-import { NoteItem } from './NoteItem'
+import { FileExplorer } from './FileExplorer'
 import type { Category } from '../../types'
 import './Sidebar.css'
 
@@ -41,7 +41,7 @@ function NewCategoryForm({ onSave, onCancel }: NewCategoryFormProps) {
   return (
     <form className="cat-form" onSubmit={handleSubmit}>
       <div className="cat-form__row">
-        <input className="cat-form__icon" value={icon} onChange={e => setIcon(e.target.value)} placeholder="📌" maxLength={4} title="Type any emoji as the icon" />
+        <input className="cat-form__icon" value={icon} onChange={e => setIcon(e.target.value)} placeholder="📌" maxLength={4} />
         <input className="cat-form__name" autoFocus value={label} onChange={e => setLabel(e.target.value)} placeholder="Category name…" />
       </div>
       <div className="cat-form__colors">
@@ -96,56 +96,46 @@ function EditCategoryForm({ category, onSave, onCancel }: EditCategoryFormProps)
 
 export function Sidebar() {
   const {
-    notes, activeId, setActiveId, addNote, deleteNote, systemInfo,
+    systemInfo,
     tags, addTag, deleteTag,
     notebooks, addNotebook, deleteNotebook,
-    categories, addCategory, updateCategory, deleteCategory
+    categories, addCategory, updateCategory, deleteCategory,
+    addNote,
   } = useNotes()
   const { sidebarOpen, setSidebarOpen } = useUI()
 
   const [search, setSearch] = useState('')
-  const [showNewMenu, setShowNewMenu] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showTemplateSelector, setShowTemplateSelector] = useState(false)
+  const [pendingFolderId, setPendingFolderId] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState('updated')
   const [notebookFilter, setNotebookFilter] = useState<string | null>(null)
   const [tagFilter, setTagFilter] = useState<string | null>(null)
+  const [folderFilter, setFolderFilter] = useState<string | null>(null)
+  const [showNewMenu, setShowNewMenu] = useState(false)
 
   const [newTagName, setNewTagName] = useState('')
   const [showNewTag, setShowNewTag] = useState(false)
   const [newNotebookName, setNewNotebookName] = useState('')
   const [showNewNotebook, setShowNewNotebook] = useState(false)
 
-  const [nbExpanded, setNbExpanded] = useState(true)
-  const [tagsExpanded, setTagsExpanded] = useState(true)
-  const [catsExpanded, setCatsExpanded] = useState(true)
+  const [nbExpanded, setNbExpanded] = useState(false)
+  const [tagsExpanded, setTagsExpanded] = useState(false)
+  const [catsExpanded, setCatsExpanded] = useState(false)
   const [showNewCat, setShowNewCat] = useState(false)
   const [editingCatId, setEditingCatId] = useState<string | null>(null)
 
-  let filtered = notes.filter(n => {
-    if (search && !n.title.toLowerCase().includes(search.toLowerCase())) return false
-    if (typeFilter === 'favorites') return n.isFavorite
-    if (typeFilter !== 'all' && n.type !== typeFilter) return false
-    if (categoryFilter && n.category !== categoryFilter) return false
-    if (notebookFilter && n.notebookId !== notebookFilter) return false
-    if (tagFilter && !(n.tagIds ?? []).includes(tagFilter)) return false
-    return true
-  })
-
-  if (sortBy === 'updated') filtered = [...filtered].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-  else if (sortBy === 'created') filtered = [...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  else if (sortBy === 'title') filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title))
-
-  const pinned   = filtered.filter(n => n.isPinned)
-  const unpinned = filtered.filter(n => !n.isPinned)
-
-  function handleNew(type: string) {
-    if (type === 'dayplan') { setShowNewMenu(false); setShowTemplateSelector(true); return }
-    if (type === 'todo')    { addNote(createTodo());    setShowNewMenu(false); return }
-    if (type === 'diagram') { addNote(createDiagram()); setShowNewMenu(false); return }
-    addNote(createNote())
+  function handleNewItem(type: string, folderId: string | null) {
+    if (type === 'dayplan') {
+      setPendingFolderId(folderId)
+      setShowTemplateSelector(true)
+      setShowNewMenu(false)
+      return
+    }
+    if (type === 'todo')    { addNote(createTodo({}, folderId));    setShowNewMenu(false); return }
+    if (type === 'diagram') { addNote(createDiagram({}, folderId)); setShowNewMenu(false); return }
+    addNote(createNote({}, folderId))
     setShowNewMenu(false)
   }
 
@@ -167,8 +157,11 @@ export function Sidebar() {
 
   const location = systemInfo?.timezone ? formatLocation(systemInfo.timezone) : ''
 
+  const filters = { search, typeFilter, categoryFilter, tagFilter, notebookFilter }
+
   return (
     <aside className={`sidebar ${!sidebarOpen ? 'sidebar--closed' : ''}`}>
+      {/* ── Header ── */}
       <div className="sidebar__header">
         <div className="sidebar__brand">
           <span className="sidebar__logo">📝</span>
@@ -182,10 +175,10 @@ export function Sidebar() {
             </button>
             {showNewMenu && (
               <div className="new-menu" onMouseLeave={() => setShowNewMenu(false)}>
-                <button onClick={() => handleNew('note')}><span>📄</span>Note</button>
-                <button onClick={() => handleNew('todo')}><span>✅</span>Todo</button>
-                <button onClick={() => handleNew('dayplan')}><span>📅</span>Day Plan</button>
-                <button onClick={() => handleNew('diagram')}><span>🎨</span>Diagram</button>
+                <button onClick={() => handleNewItem('note', folderFilter)}><span>📄</span>Note</button>
+                <button onClick={() => handleNewItem('todo', folderFilter)}><span>✅</span>Todo</button>
+                <button onClick={() => handleNewItem('dayplan', folderFilter)}><span>📅</span>Day Plan</button>
+                <button onClick={() => handleNewItem('diagram', folderFilter)}><span>🎨</span>Diagram</button>
               </div>
             )}
           </div>
@@ -193,15 +186,17 @@ export function Sidebar() {
         </div>
       </div>
 
+      {/* ── Search ── */}
       <div className="sidebar__search">
         <span className="sidebar__search-icon">🔍</span>
-        <input type="text" placeholder="Filter notes…" value={search} onChange={e => setSearch(e.target.value)} />
+        <input type="text" placeholder="Filter files…" value={search} onChange={e => setSearch(e.target.value)} />
         {search
           ? <button className="sidebar__search-clear" onClick={() => setSearch('')}>✕</button>
           : <kbd className="sidebar__search-kbd">⌘K</kbd>
         }
       </div>
 
+      {/* ── Type tabs ── */}
       <div className="sidebar__type-tabs">
         {TYPE_TABS.map(t => (
           <button
@@ -216,168 +211,143 @@ export function Sidebar() {
         ))}
       </div>
 
-      <div className="sidebar__categories">
-        <button className={`cat-chip ${!categoryFilter ? 'cat-chip--all' : ''}`} onClick={() => setCategoryFilter(null)}>All</button>
-        {categories.map(c => (
-          <button
-            key={c.id}
-            className={`cat-chip ${categoryFilter === c.id ? 'cat-chip--active' : ''}`}
-            style={{ '--cat-color': c.color } as React.CSSProperties}
-            onClick={() => setCategoryFilter(categoryFilter === c.id ? null : c.id)}
-            title={c.label}
-          >
-            <span>{c.icon}</span>
-            <span className="cat-chip__label">{c.label}</span>
+      {/* ── File tree (main content) ── */}
+      <div className="sidebar__tree-area">
+        <FileExplorer
+          filters={filters}
+          selectedFolderId={folderFilter}
+          onFolderSelect={setFolderFilter}
+          onNewItem={handleNewItem}
+        />
+      </div>
+
+      {/* ── Filters accordions ── */}
+      <div className="sidebar__filters">
+        {/* Categories */}
+        <div className="sidebar__accordion">
+          <button className="sidebar__accordion-header" onClick={() => setCatsExpanded(v => !v)}>
+            <span>Categories</span>
+            <span className="sidebar__accordion-arrow">{catsExpanded ? '▾' : '▸'}</span>
+            <button
+              className="sidebar__accordion-add"
+              onClick={e => { e.stopPropagation(); setShowNewCat(v => !v); setEditingCatId(null) }}
+              title="New category"
+            >+</button>
           </button>
-        ))}
-      </div>
-
-      <div className="sidebar__sort-row">
-        <span className="sidebar__count">{filtered.length} {filtered.length === 1 ? 'item' : 'items'}</span>
-        <select className="sidebar__sort" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-          <option value="updated">Modified</option>
-          <option value="created">Created</option>
-          <option value="title">Title A–Z</option>
-        </select>
-      </div>
-
-      <div className="sidebar__list">
-        {pinned.length > 0 && <div className="sidebar__group-label">📌 Pinned</div>}
-        {pinned.map(n => (
-          <NoteItem key={n.id} note={n} active={n.id === activeId}
-            onClick={() => setActiveId(n.id)} onDelete={() => deleteNote(n.id)} />
-        ))}
-        {unpinned.length > 0 && pinned.length > 0 && <div className="sidebar__group-label">All</div>}
-        {unpinned.map(n => (
-          <NoteItem key={n.id} note={n} active={n.id === activeId}
-            onClick={() => setActiveId(n.id)} onDelete={() => deleteNote(n.id)} />
-        ))}
-        {filtered.length === 0 && (
-          <div className="sidebar__empty">
-            {search || categoryFilter || typeFilter !== 'all' ? 'No matches' : 'Nothing here yet'}
-          </div>
-        )}
-      </div>
-
-      {/* ── Categories management ── */}
-      <div className="sidebar__accordion">
-        <button className="sidebar__accordion-header" onClick={() => setCatsExpanded(v => !v)}>
-          <span>Categories</span>
-          <span className="sidebar__accordion-arrow">{catsExpanded ? '▾' : '▸'}</span>
-          <button
-            className="sidebar__accordion-add"
-            onClick={e => { e.stopPropagation(); setShowNewCat(v => !v); setEditingCatId(null) }}
-            title="New category"
-          >+</button>
-        </button>
-        {catsExpanded && (
-          <div className="sidebar__accordion-body">
-            {showNewCat && (
-              <NewCategoryForm
-                onSave={cat => { addCategory(cat); setShowNewCat(false) }}
-                onCancel={() => setShowNewCat(false)}
-              />
-            )}
-            {categories.map(cat => (
-              <div key={cat.id}>
-                {editingCatId === cat.id ? (
-                  <EditCategoryForm
-                    category={cat}
-                    onSave={patch => { updateCategory(cat.id, patch); setEditingCatId(null) }}
-                    onCancel={() => setEditingCatId(null)}
-                  />
-                ) : (
-                  <div className="sidebar__cat-row">
-                    <button
-                      className={`sidebar__cat-item ${categoryFilter === cat.id ? 'sidebar__cat-item--active' : ''}`}
-                      style={{ '--cat-color': cat.color } as React.CSSProperties}
-                      onClick={() => setCategoryFilter(cat.id === categoryFilter ? null : cat.id)}
-                    >
-                      <span className="sidebar__cat-dot" style={{ background: cat.color }} />
-                      <span className="sidebar__cat-icon">{cat.icon}</span>
-                      <span className="sidebar__cat-label">{cat.label}</span>
-                      {cat.isBuiltIn && <span className="sidebar__cat-builtin">built-in</span>}
-                    </button>
-                    {!cat.isBuiltIn && (
-                      <div className="sidebar__cat-actions">
-                        <button className="sidebar__cat-edit-btn" onClick={() => { setEditingCatId(cat.id); setShowNewCat(false) }} title="Edit">✎</button>
-                        <button className="sidebar__del-btn" onClick={() => { deleteCategory(cat.id); if (categoryFilter === cat.id) setCategoryFilter(null) }} title="Delete">×</button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── Notebooks ── */}
-      <div className="sidebar__accordion">
-        <button className="sidebar__accordion-header" onClick={() => setNbExpanded(v => !v)}>
-          <span>Notebooks</span>
-          <span className="sidebar__accordion-arrow">{nbExpanded ? '▾' : '▸'}</span>
-          <button className="sidebar__accordion-add" onClick={e => { e.stopPropagation(); setShowNewNotebook(v => !v) }} title="New notebook">+</button>
-        </button>
-        {nbExpanded && (
-          <div className="sidebar__accordion-body">
-            {showNewNotebook && (
-              <form className="sidebar__inline-form" onSubmit={handleAddNotebook}>
-                <input autoFocus placeholder="Notebook name…" value={newNotebookName}
-                  onChange={e => setNewNotebookName(e.target.value)}
-                  onBlur={() => { if (!newNotebookName.trim()) setShowNewNotebook(false) }} />
-              </form>
-            )}
-            <button className={`sidebar__nb-item ${!notebookFilter ? 'sidebar__nb-item--active' : ''}`} onClick={() => setNotebookFilter(null)}>📁 All notebooks</button>
-            {notebooks.map(nb => (
-              <div key={nb.id} className="sidebar__nb-row">
-                <button
-                  className={`sidebar__nb-item ${notebookFilter === nb.id ? 'sidebar__nb-item--active' : ''}`}
-                  onClick={() => setNotebookFilter(nb.id === notebookFilter ? null : nb.id)}
-                >{nb.icon} {nb.name}</button>
-                <button className="sidebar__del-btn" onClick={() => deleteNotebook(nb.id)}>×</button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── Tags ── */}
-      <div className="sidebar__accordion">
-        <button className="sidebar__accordion-header" onClick={() => setTagsExpanded(v => !v)}>
-          <span>Tags</span>
-          <span className="sidebar__accordion-arrow">{tagsExpanded ? '▾' : '▸'}</span>
-          <button className="sidebar__accordion-add" onClick={e => { e.stopPropagation(); setShowNewTag(v => !v) }} title="New tag">+</button>
-        </button>
-        {tagsExpanded && (
-          <div className="sidebar__accordion-body">
-            {showNewTag && (
-              <form className="sidebar__inline-form" onSubmit={handleAddTag}>
-                <input autoFocus placeholder="Tag name…" value={newTagName}
-                  onChange={e => setNewTagName(e.target.value)}
-                  onBlur={() => { if (!newTagName.trim()) setShowNewTag(false) }} />
-              </form>
-            )}
-            <div className="sidebar__tags-wrap">
-              {tags.map(tag => (
-                <div key={tag.id} className="sidebar__tag-row">
-                  <button
-                    className={`sidebar__tag ${tagFilter === tag.id ? 'sidebar__tag--active' : ''}`}
-                    style={{ '--tag-color': tag.color } as React.CSSProperties}
-                    onClick={() => setTagFilter(tag.id === tagFilter ? null : tag.id)}
-                  >
-                    <span className="sidebar__tag-dot" />
-                    {tag.name}
-                  </button>
-                  <button className="sidebar__del-btn" onClick={() => { deleteTag(tag.id); if (tagFilter === tag.id) setTagFilter(null) }}>×</button>
+          {catsExpanded && (
+            <div className="sidebar__accordion-body">
+              {showNewCat && (
+                <NewCategoryForm
+                  onSave={cat => { addCategory(cat); setShowNewCat(false) }}
+                  onCancel={() => setShowNewCat(false)}
+                />
+              )}
+              <button className={`sidebar__cat-item ${!categoryFilter ? 'sidebar__cat-item--active' : ''}`} onClick={() => setCategoryFilter(null)}>
+                <span className="sidebar__cat-dot" style={{ background: 'var(--text-muted)' }} />
+                <span>All</span>
+              </button>
+              {categories.map(cat => (
+                <div key={cat.id}>
+                  {editingCatId === cat.id ? (
+                    <EditCategoryForm
+                      category={cat}
+                      onSave={patch => { updateCategory(cat.id, patch); setEditingCatId(null) }}
+                      onCancel={() => setEditingCatId(null)}
+                    />
+                  ) : (
+                    <div className="sidebar__cat-row">
+                      <button
+                        className={`sidebar__cat-item ${categoryFilter === cat.id ? 'sidebar__cat-item--active' : ''}`}
+                        style={{ '--cat-color': cat.color } as React.CSSProperties}
+                        onClick={() => setCategoryFilter(cat.id === categoryFilter ? null : cat.id)}
+                      >
+                        <span className="sidebar__cat-dot" style={{ background: cat.color }} />
+                        <span className="sidebar__cat-icon">{cat.icon}</span>
+                        <span className="sidebar__cat-label">{cat.label}</span>
+                        {cat.isBuiltIn && <span className="sidebar__cat-builtin">built-in</span>}
+                      </button>
+                      {!cat.isBuiltIn && (
+                        <div className="sidebar__cat-actions">
+                          <button className="sidebar__cat-edit-btn" onClick={() => { setEditingCatId(cat.id); setShowNewCat(false) }} title="Edit">✎</button>
+                          <button className="sidebar__del-btn" onClick={() => { deleteCategory(cat.id); if (categoryFilter === cat.id) setCategoryFilter(null) }} title="Delete">×</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
-              {tags.length === 0 && <span className="sidebar__empty-small">No tags yet</span>}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Notebooks */}
+        <div className="sidebar__accordion">
+          <button className="sidebar__accordion-header" onClick={() => setNbExpanded(v => !v)}>
+            <span>Notebooks</span>
+            <span className="sidebar__accordion-arrow">{nbExpanded ? '▾' : '▸'}</span>
+            <button className="sidebar__accordion-add" onClick={e => { e.stopPropagation(); setShowNewNotebook(v => !v) }} title="New notebook">+</button>
+          </button>
+          {nbExpanded && (
+            <div className="sidebar__accordion-body">
+              {showNewNotebook && (
+                <form className="sidebar__inline-form" onSubmit={handleAddNotebook}>
+                  <input autoFocus placeholder="Notebook name…" value={newNotebookName}
+                    onChange={e => setNewNotebookName(e.target.value)}
+                    onBlur={() => { if (!newNotebookName.trim()) setShowNewNotebook(false) }} />
+                </form>
+              )}
+              <button className={`sidebar__nb-item ${!notebookFilter ? 'sidebar__nb-item--active' : ''}`} onClick={() => setNotebookFilter(null)}>📁 All notebooks</button>
+              {notebooks.map(nb => (
+                <div key={nb.id} className="sidebar__nb-row">
+                  <button
+                    className={`sidebar__nb-item ${notebookFilter === nb.id ? 'sidebar__nb-item--active' : ''}`}
+                    onClick={() => setNotebookFilter(nb.id === notebookFilter ? null : nb.id)}
+                  >{nb.icon} {nb.name}</button>
+                  <button className="sidebar__del-btn" onClick={() => deleteNotebook(nb.id)}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Tags */}
+        <div className="sidebar__accordion">
+          <button className="sidebar__accordion-header" onClick={() => setTagsExpanded(v => !v)}>
+            <span>Tags</span>
+            <span className="sidebar__accordion-arrow">{tagsExpanded ? '▾' : '▸'}</span>
+            <button className="sidebar__accordion-add" onClick={e => { e.stopPropagation(); setShowNewTag(v => !v) }} title="New tag">+</button>
+          </button>
+          {tagsExpanded && (
+            <div className="sidebar__accordion-body">
+              {showNewTag && (
+                <form className="sidebar__inline-form" onSubmit={handleAddTag}>
+                  <input autoFocus placeholder="Tag name…" value={newTagName}
+                    onChange={e => setNewTagName(e.target.value)}
+                    onBlur={() => { if (!newTagName.trim()) setShowNewTag(false) }} />
+                </form>
+              )}
+              <div className="sidebar__tags-wrap">
+                {tags.map(tag => (
+                  <div key={tag.id} className="sidebar__tag-row">
+                    <button
+                      className={`sidebar__tag ${tagFilter === tag.id ? 'sidebar__tag--active' : ''}`}
+                      style={{ '--tag-color': tag.color } as React.CSSProperties}
+                      onClick={() => setTagFilter(tag.id === tagFilter ? null : tag.id)}
+                    >
+                      <span className="sidebar__tag-dot" />
+                      {tag.name}
+                    </button>
+                    <button className="sidebar__del-btn" onClick={() => { deleteTag(tag.id); if (tagFilter === tag.id) setTagFilter(null) }}>×</button>
+                  </div>
+                ))}
+                {tags.length === 0 && <span className="sidebar__empty-small">No tags yet</span>}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* ── Footer ── */}
       <div className="sidebar__footer">
         <div className="sidebar__footer-top">
           <SaveIndicator />
@@ -390,7 +360,12 @@ export function Sidebar() {
       </div>
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
-      {showTemplateSelector && <TemplateSelector onClose={() => setShowTemplateSelector(false)} />}
+      {showTemplateSelector && (
+        <TemplateSelector
+          folderId={pendingFolderId}
+          onClose={() => { setShowTemplateSelector(false); setPendingFolderId(null) }}
+        />
+      )}
     </aside>
   )
 }

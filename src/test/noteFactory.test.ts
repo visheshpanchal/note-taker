@@ -5,6 +5,7 @@ import {
   createTodoItem,
   createTag,
   createNotebook,
+  createFolder,
   createCategory,
   createDiagram,
   createDayPlan,
@@ -206,5 +207,60 @@ describe('createDefaultData', () => {
     expect(d.categories).toEqual([])
     expect(d.templates).toEqual([])
     expect(d.settings.storageLocation).toBe('/some/path')
+  })
+})
+
+describe('createFolder', () => {
+  it('creates a root folder with default icon', () => {
+    const f = createFolder('Projects')
+    expect(f.name).toBe('Projects')
+    expect(f.parentId).toBeNull()
+    expect(f.icon).toBe('📁')
+    expect(f.id).toBe('test-uuid')
+  })
+
+  it('accepts a parentId for nested folders', () => {
+    const f = createFolder('Subproject', 'parent-id')
+    expect(f.parentId).toBe('parent-id')
+  })
+
+  it('has a valid ISO createdAt', () => {
+    const f = createFolder('Test')
+    expect(() => new Date(f.createdAt)).not.toThrow()
+    expect(f.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+  })
+})
+
+describe('folderId parameter', () => {
+  it('createNote sets folderId', () => {
+    const note = createNote({}, 'folder-abc')
+    expect(note.folderId).toBe('folder-abc')
+  })
+
+  it('createNote defaults folderId to null', () => {
+    const note = createNote()
+    expect(note.folderId).toBeNull()
+  })
+
+  it('createTodo sets folderId', () => {
+    const todo = createTodo({}, 'folder-xyz')
+    expect(todo.folderId).toBe('folder-xyz')
+  })
+
+  it('createDiagram sets folderId', () => {
+    const d = createDiagram({}, 'folder-123')
+    expect(d.folderId).toBe('folder-123')
+  })
+
+  it('createDayPlan sets folderId', () => {
+    const template = createDefaultTemplate()
+    const plan = createDayPlan(template, '2026-03-15', 'folder-plan')
+    expect(plan.folderId).toBe('folder-plan')
+  })
+
+  it('createDayPlan defaults folderId to null', () => {
+    const template = createDefaultTemplate()
+    const plan = createDayPlan(template, '2026-03-15')
+    expect(plan.folderId).toBeNull()
   })
 })

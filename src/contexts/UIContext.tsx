@@ -35,7 +35,14 @@ export function UIProvider({ children }: { children: ReactNode }) {
     function handler(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setShowQuickOpen(v => !v) }
       if (e.key === 'Escape') setShowQuickOpen(false)
-      if ((e.metaKey || e.ctrlKey) && e.key === '\\') { e.preventDefault(); setSidebarOpen(v => !v) }
+      if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
+        e.preventDefault()
+        setSidebarOpenRaw(v => {
+          const next = !v
+          try { localStorage.setItem('sidebarOpen', String(next)) } catch {}
+          return next
+        })
+      }
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)

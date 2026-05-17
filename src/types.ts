@@ -18,6 +18,14 @@ export interface Notebook {
   createdAt: string
 }
 
+export interface Folder {
+  id: string
+  name: string
+  parentId: string | null
+  icon: string
+  createdAt: string
+}
+
 export interface Category {
   id: string
   label: string
@@ -132,6 +140,7 @@ export interface Template {
 interface NoteExtras {
   tagIds: string[]
   notebookId: string | null
+  folderId: string | null
   dueDate: string | null
   color: string | null
   isFavorite: boolean
@@ -197,6 +206,7 @@ export interface AppData {
   templates: Template[]
   tags: Tag[]
   notebooks: Notebook[]
+  folders: Folder[]
   categories: Category[]
   customFields: Record<string, unknown>
   metadata: { createdAt: string; lastModified: string }

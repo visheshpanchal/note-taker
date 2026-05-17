@@ -4,7 +4,7 @@ import { loadData, saveData } from '../utils/storage'
 import { createDefaultData, createDefaultTemplate, createFocusTemplate } from '../utils/noteFactory'
 import { BUILT_IN_CATEGORIES } from '../utils/categories'
 import type {
-  AnyNote, Tag, Notebook, Category, Template, AppData,
+  AnyNote, Tag, Notebook, Folder, Category, Template, AppData,
   AppSettings, SystemInfo, SaveStatus
 } from '../types'
 
@@ -25,6 +25,10 @@ interface NotesContextValue {
   addNotebook: (nb: Notebook) => void
   updateNotebook: (id: string, patch: Partial<Notebook>) => void
   deleteNotebook: (id: string) => void
+  folders: Folder[]
+  addFolder: (f: Folder) => void
+  updateFolder: (id: string, patch: Partial<Folder>) => void
+  deleteFolder: (id: string) => void
   categories: Category[]
   addCategory: (cat: Category) => void
   updateCategory: (id: string, patch: Partial<Category>) => void
@@ -113,6 +117,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const notes     = data?.notes     ?? []
   const tags      = data?.tags      ?? []
   const notebooks = data?.notebooks ?? []
+  const folders   = data?.folders   ?? []
   const templates = fileTemplates ?? FALLBACK_TEMPLATES
 
   const categories = useMemo(() => [
@@ -194,6 +199,37 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     } : prev)
   }, [])
 
+  const addFolder = useCallback((f: Folder) => {
+    setData(prev => prev ? { ...prev, folders: [...(prev.folders ?? []), f] } : prev)
+  }, [])
+
+  const updateFolder = useCallback((id: string, patch: Partial<Folder>) => {
+    setData(prev => prev ? {
+      ...prev, folders: (prev.folders ?? []).map(f => f.id === id ? { ...f, ...patch } : f)
+    } : prev)
+  }, [])
+
+  const deleteFolder = useCallback((id: string) => {
+    setData(prev => {
+      if (!prev) return prev
+      const allFolders = prev.folders ?? []
+      const toDelete = new Set<string>()
+      const queue = [id]
+      while (queue.length > 0) {
+        const fid = queue.shift()!
+        toDelete.add(fid)
+        allFolders.filter(f => f.parentId === fid).forEach(c => queue.push(c.id))
+      }
+      return {
+        ...prev,
+        folders: allFolders.filter(f => !toDelete.has(f.id)),
+        notes: (prev.notes ?? []).map(n =>
+          n.folderId && toDelete.has(n.folderId) ? { ...n, folderId: null } : n
+        )
+      }
+    })
+  }, [])
+
   const addCategory = useCallback((cat: Category) => {
     setData(prev => prev ? { ...prev, categories: [...(prev.categories ?? []), cat] } : prev)
   }, [])
@@ -264,6 +300,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       addNote, updateNote, deleteNote, duplicateNote,
       tags, addTag, updateTag, deleteTag,
       notebooks, addNotebook, updateNotebook, deleteNotebook,
+      folders, addFolder, updateFolder, deleteFolder,
       categories, addCategory, updateCategory, deleteCategory,
       templates, addTemplate, updateTemplate, deleteTemplate,
       settings: data?.settings ?? {},

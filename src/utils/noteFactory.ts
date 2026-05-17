@@ -1,33 +1,35 @@
 import { v4 as uuidv4 } from 'uuid'
 import { getLocationTag } from './location'
 import type {
-  Note, Todo, TodoItem, Tag, Notebook, Category, Diagram, DayPlan,
+  Note, Todo, TodoItem, Tag, Notebook, Category, Diagram, DayPlan, Folder,
   Template, AnySection, AppData, TemplateSectionDef,
   TextSectionData, PrioritiesSectionData, ChecklistSectionData, TimeBlockSectionData
 } from '../types'
 
 // ─── Shared extra fields on every note ─────────────────────────────────────
-function noteExtras() {
+function noteExtras(folderId: string | null = null) {
   return {
-    tagIds: [] as string[], notebookId: null as string | null, dueDate: null as string | null,
+    tagIds: [] as string[], notebookId: null as string | null,
+    folderId: folderId as string | null,
+    dueDate: null as string | null,
     color: null as string | null, isFavorite: false, category: null as string | null,
     attachments: []
   }
 }
 
 // ─── Note / Todo / DayPlan ──────────────────────────────────────────────────
-export function createNote(overrides: Partial<Note> = {}): Note {
+export function createNote(overrides: Partial<Note> = {}, folderId: string | null = null): Note {
   const now = new Date().toISOString()
   return {
     id: uuidv4(), type: 'note', title: 'Untitled Note', content: '',
     tags: [], isPinned: false, locationTag: getLocationTag(),
     createdAt: now, updatedAt: now,
     metadata: {}, extensions: {},
-    ...noteExtras(), ...overrides
+    ...noteExtras(folderId), ...overrides
   }
 }
 
-export function createTodo(overrides: Partial<Todo> = {}): Todo {
+export function createTodo(overrides: Partial<Todo> = {}, folderId: string | null = null): Todo {
   const now = new Date().toISOString()
   return {
     id: uuidv4(), type: 'todo', title: 'Untitled Todo', items: [],
@@ -35,7 +37,7 @@ export function createTodo(overrides: Partial<Todo> = {}): Todo {
     createdAt: now, updatedAt: now,
     reminderAt: null, reminderNotified: false,
     metadata: {}, extensions: {},
-    ...noteExtras(), ...overrides
+    ...noteExtras(folderId), ...overrides
   }
 }
 
@@ -60,6 +62,10 @@ export function createTag(name: string, color?: string): Tag {
 
 export function createNotebook(name: string, icon = '📁'): Notebook {
   return { id: uuidv4(), name, icon, createdAt: new Date().toISOString() }
+}
+
+export function createFolder(name: string, parentId: string | null = null): Folder {
+  return { id: uuidv4(), name, parentId, icon: '📁', createdAt: new Date().toISOString() }
 }
 
 export function createCategory(label: string, icon = '📌', color = '#6366f1'): Category {
@@ -105,7 +111,7 @@ function instantiateSection(def: TemplateSectionDef): AnySection {
   }
 }
 
-export function createDiagram(overrides: Partial<Diagram> = {}): Diagram {
+export function createDiagram(overrides: Partial<Diagram> = {}, folderId: string | null = null): Diagram {
   const now = new Date().toISOString()
   return {
     id: uuidv4(), type: 'diagram', title: 'Untitled Diagram',
@@ -113,11 +119,11 @@ export function createDiagram(overrides: Partial<Diagram> = {}): Diagram {
     tags: [], isPinned: false, locationTag: getLocationTag(),
     createdAt: now, updatedAt: now,
     metadata: {}, extensions: {},
-    ...noteExtras(), ...overrides
+    ...noteExtras(folderId), ...overrides
   }
 }
 
-export function createDayPlan(template: Template, date: Date | string = new Date()): DayPlan {
+export function createDayPlan(template: Template, date: Date | string = new Date(), folderId: string | null = null): DayPlan {
   const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0]
   const d = new Date(dateStr + 'T12:00:00')
   const dateLabel = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
@@ -132,7 +138,7 @@ export function createDayPlan(template: Template, date: Date | string = new Date
     createdAt: now, updatedAt: now,
     reminderAt: null, reminderNotified: false,
     metadata: {}, extensions: {},
-    ...noteExtras()
+    ...noteExtras(folderId)
   }
 }
 
@@ -172,7 +178,7 @@ export function createDefaultData(storagePath = ''): AppData {
     $schema: 'https://json-schema.org/draft-07/schema',
     version: 1,
     settings: { theme: 'system', storageLocation: storagePath },
-    notes: [], templates: [], tags: [], notebooks: [], categories: [],
+    notes: [], templates: [], tags: [], notebooks: [], folders: [], categories: [],
     customFields: {},
     metadata: { createdAt: new Date().toISOString(), lastModified: new Date().toISOString() }
   }

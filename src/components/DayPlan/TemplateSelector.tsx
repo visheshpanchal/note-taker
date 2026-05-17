@@ -7,9 +7,10 @@ const TYPE_ICONS: Record<string, string> = { text: '📝', priorities: '🎯', c
 
 interface TemplateSelectorProps {
   onClose: () => void
+  folderId?: string | null
 }
 
-export function TemplateSelector({ onClose }: TemplateSelectorProps) {
+export function TemplateSelector({ onClose, folderId = null }: TemplateSelectorProps) {
   const { templates, addNote } = useNotes()
   const [selected, setSelected] = useState<string | null>(templates[0]?.id ?? null)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -17,9 +18,9 @@ export function TemplateSelector({ onClose }: TemplateSelectorProps) {
   const handleCreate = useCallback(() => {
     const template = templates.find(t => t.id === selected)
     if (!template) return
-    addNote(createDayPlan(template, date))
+    addNote(createDayPlan(template, date, folderId))
     onClose()
-  }, [selected, date, templates, addNote, onClose])
+  }, [selected, date, folderId, templates, addNote, onClose])
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose()
