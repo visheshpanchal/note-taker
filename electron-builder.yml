@@ -1,0 +1,118 @@
+appId: com.notetakinnapp
+productName: NoteTaker
+copyright: Copyright © 2026 NoteTaker
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+
+# ─── macOS ──────────────────────────────────────────────────────────────────
+mac:
+  category: public.app-category.productivity
+  icon: build/icons/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  # Code-signing identity — set CSC_LINK + CSC_KEY_PASSWORD env vars to sign.
+  # Leave unset for unsigned local builds.
+  target:
+    - target: dmg
+      arch:
+        - x64       # Intel
+        - arm64     # Apple Silicon
+        - universal # Fat binary (both)
+    - target: zip
+      arch:
+        - x64
+        - arm64
+        - universal
+
+dmg:
+  title: "${productName} ${version}"
+  icon: build/icons/icon.icns
+  background: build/dmg-background.png
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 130
+      y: 190
+      type: file
+    - x: 410
+      y: 190
+      type: link
+      path: /Applications
+
+# ─── Windows ────────────────────────────────────────────────────────────────
+win:
+  icon: build/icons/icon.ico
+  # Set up code-signing via CSC_LINK + CSC_KEY_PASSWORD env vars.
+  target:
+    - target: nsis
+      arch:
+        - x64
+        - ia32
+        - arm64
+    - target: portable
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: NoteTaker
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  installerIcon: build/icons/icon.ico
+  uninstallerIcon: build/icons/icon.ico
+
+# ─── Linux ──────────────────────────────────────────────────────────────────
+linux:
+  icon: build/icons/
+  category: Office
+  description: A rich note-taking app with todos and timers
+  target:
+    - target: AppImage
+      arch:
+        - x64
+        - arm64
+        - armv7l
+    - target: deb
+      arch:
+        - x64
+        - arm64
+        - armv7l
+    - target: rpm
+      arch:
+        - x64
+        - arm64
+
+deb:
+  depends:
+    - libnotify4
+    - libxtst6
+    - libnss3
+    - libsecret-1-0
+
+rpm:
+  depends:
+    - libnotify
+    - libXtst
+    - nss
+    - libsecret
+
+# ─── Auto-update (GitHub Releases) ──────────────────────────────────────────
+# Set GH_TOKEN env var to publish.
+publish:
+  provider: github
+  releaseType: release

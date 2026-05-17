@@ -1,0 +1,38 @@
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--tag-color) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-color) 40%, transparent);
+  font-size: 12px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  user-select: none;
+}
+.tag-pill--small { padding: 1px 6px; font-size: 10px; }
+.tag-pill--clickable { cursor: pointer; transition: all 0.15s ease; }
+.tag-pill--clickable:hover { background: color-mix(in srgb, var(--tag-color) 25%, transparent); }
+
+.tag-pill__dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--tag-color);
+  flex-shrink: 0;
+}
+.tag-pill--small .tag-pill__dot { width: 5px; height: 5px; }
+
+.tag-pill__name { line-height: 1; }
+
+.tag-pill__remove {
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+}
+.tag-pill__remove:hover { color: var(--danger); }

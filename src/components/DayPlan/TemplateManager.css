@@ -1,0 +1,86 @@
+.template-manager { display: flex; flex-direction: column; gap: 8px; }
+
+.tm-card {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.tm-card__left { width: 4px; flex-shrink: 0; }
+
+.tm-card__body { flex: 1; padding: 10px 12px; min-width: 0; }
+
+.tm-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.tm-card__name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+
+.tm-name-input {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  outline: none;
+}
+
+.tm-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.tm-card__desc { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+
+.tm-card__sections { display: flex; flex-wrap: wrap; gap: 4px; }
+.tm-pill {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.tm-card__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border-left: 1px solid var(--border);
+}
+
+.tm-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all var(--transition);
+  background: transparent;
+}
+.tm-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.tm-btn--delete:hover { background: rgba(255,59,48,0.1); color: var(--danger); }
+.tm-btn--confirm { background: var(--warning) !important; color: white !important; font-weight: 700; font-size: 11px; }
+
+.tm-empty { font-size: 13px; color: var(--text-muted); padding: 12px 0; }

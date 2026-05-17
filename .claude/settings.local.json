@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create *)",
+      "Bash(cp *)",
+      "Bash(npm install *)",
+      "Bash(mkdir -p /Users/visheshpanchal/Documents/note-takinnapp/electron)",
+      "Bash(mkdir -p /Users/visheshpanchal/Documents/note-takinnapp/src/contexts)",
+      "Bash(mkdir -p /Users/visheshpanchal/Documents/note-takinnapp/src/components/Sidebar)",
+      "Bash(mkdir -p /Users/visheshpanchal/Documents/note-takinnapp/src/components/Editor)",
+      "Bash(mkdir -p /Users/visheshpanchal/Documents/note-takinnapp/src/components/Todo)",
+      "Bash(npm run *)",
+      "Bash(node *)",
+      "Bash(sed -n '109,125p' /Users/visheshpanchal/Documents/note-takinnapp/src/components/Todo/TodoEditor.css)",
+      "Bash(sed -n '140,156p' /Users/visheshpanchal/Documents/note-takinnapp/src/components/DayPlan/DayPlanEditor.css)"
+    ]
+  }
+}

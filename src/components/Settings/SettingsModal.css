@@ -1,0 +1,263 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+  animation: overlay-in 0.15s ease;
+}
+@keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  width: 520px;
+  max-width: calc(100vw - 48px);
+  animation: modal-in 0.18s ease;
+}
+.modal--wide { width: 600px; max-height: 80vh; display: flex; flex-direction: column; }
+.modal--wide .modal__body { overflow-y: auto; flex: 1; }
+
+.modal__tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.modal__tab {
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all var(--transition);
+}
+.modal__tab:hover { color: var(--text-primary); }
+.modal__tab--active { color: var(--accent); border-bottom-color: var(--accent); }
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modal__close {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+.modal__close:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+.modal__body { padding: 20px; }
+
+.settings-section__title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.settings-section__desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+.settings-section__desc code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg-tertiary);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: var(--accent);
+}
+
+.storage-path {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.storage-path--default { opacity: 0.7; }
+
+.storage-path__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+
+.storage-path__value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.storage-path__text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+  word-break: break-all;
+  flex: 1;
+}
+
+.storage-path__badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.storage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition);
+  border: none;
+  cursor: pointer;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn--primary { background: var(--accent); color: var(--accent-fg); }
+.btn--primary:not(:disabled):hover { background: var(--accent-hover); }
+
+.btn--secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+.btn--secondary:not(:disabled):hover { background: var(--bg-tertiary); }
+
+.btn--ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+.btn--ghost:not(:disabled):hover { background: var(--bg-secondary); color: var(--text-primary); }
+
+.storage-status {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.storage-status--success {
+  background: rgba(52, 199, 89, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(52, 199, 89, 0.3);
+}
+.storage-status--error {
+  background: rgba(255, 59, 48, 0.10);
+  color: var(--danger);
+  border: 1px solid rgba(255, 59, 48, 0.3);
+}
+
+/* Highlighted storage path row */
+.storage-path--highlight {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.storage-path--highlight .storage-path__label {
+  color: var(--accent);
+}
+.storage-path--highlight .storage-path__text {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-badge-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+/* Autosave status card */
+.autosave-status-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.autosave-status-card__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.autosave-status-card__row:last-child { border-bottom: none; }
+
+.autosave-status-card__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  width: 100px;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.autosave-status-card__value {
+  font-size: 12px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+.autosave-status-card__value--mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  word-break: break-all;
+  color: var(--text-secondary);
+}
+
+/* Autosave status badge */
+.autosave-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 20px;
+}
+.autosave-badge--idle    { color: var(--text-muted);  background: var(--bg-tertiary); }
+.autosave-badge--pending { color: var(--warning);     background: color-mix(in srgb, var(--warning) 12%, transparent); }
+.autosave-badge--saving  { color: var(--accent);      background: var(--accent-soft); }
+.autosave-badge--saved   { color: var(--success);     background: color-mix(in srgb, var(--success) 12%, transparent); }
+.autosave-badge--error   { color: var(--danger);      background: color-mix(in srgb, var(--danger) 12%, transparent); }

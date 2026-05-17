@@ -1,0 +1,82 @@
+import { useEffect } from 'react'
+import { useNotes } from './contexts/NotesContext.jsx'
+import { useUI } from './contexts/UIContext.jsx'
+import { useReminderChecker } from './hooks/useReminderChecker.js'
+import { Sidebar } from './components/Sidebar/Sidebar.jsx'
+import { NoteEditor } from './components/Editor/NoteEditor.jsx'
+import { TodoEditor } from './components/Todo/TodoEditor.jsx'
+import { DayPlanEditor } from './components/DayPlan/DayPlanEditor.jsx'
+import { DiagramEditor } from './components/Diagram/DiagramEditor.jsx'
+import { PropertiesPanel } from './components/Properties/PropertiesPanel.jsx'
+import { QuickOpen } from './components/Search/QuickOpen.jsx'
+import './App.css'
+
+function MainContent() {
+  const { activeNote, loading } = useNotes()
+  const { showProperties, sidebarOpen, setSidebarOpen } = useUI()
+
+  const collapseTab = !sidebarOpen && (
+    <button className="sidebar-tab" onClick={() => setSidebarOpen(true)} title="Open sidebar (⌘\\)">›</button>
+  )
+
+  if (loading) {
+    return (
+      <div className="main-content main-content--loading">
+        {collapseTab}
+        <div className="loading-spinner" />
+      </div>
+    )
+  }
+
+  if (!activeNote) {
+    return (
+      <div className="main-content main-content--empty">
+        {collapseTab}
+        <div className="empty-state">
+          <div className="empty-state__icon">📝</div>
+          <h2>Select or create a note</h2>
+          <p>Choose from the sidebar or click <strong>+ New</strong> to get started.</p>
+          <p className="empty-state__hint">Press <kbd>⌘K</kbd> to quickly jump to any note.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="main-content">
+      {collapseTab}
+      <div className="main-content__editor">
+        {activeNote.type === 'note'    && <NoteEditor    note={activeNote} key={activeNote.id} />}
+        {activeNote.type === 'todo'    && <TodoEditor    note={activeNote} key={activeNote.id} />}
+        {activeNote.type === 'dayplan' && <DayPlanEditor note={activeNote} key={activeNote.id} />}
+        {activeNote.type === 'diagram' && <DiagramEditor note={activeNote} key={activeNote.id} />}
+      </div>
+      {showProperties && activeNote.type === 'note' && (
+        <PropertiesPanel note={activeNote} />
+      )}
+    </div>
+  )
+}
+
+export default function App() {
+  const { showQuickOpen, setShowQuickOpen } = useUI()
+  const { setActiveId } = useNotes()
+
+  // Start background reminder checker
+  useReminderChecker()
+
+  // When user clicks a notification, focus the relevant note
+  useEffect(() => {
+    if (!window.electronAPI?.onNoteFocus) return
+    const cleanup = window.electronAPI.onNoteFocus((noteId) => setActiveId(noteId))
+    return cleanup
+  }, [setActiveId])
+
+  return (
+    <div className="app">
+      <Sidebar />
+      <MainContent />
+      {showQuickOpen && <QuickOpen onClose={() => setShowQuickOpen(false)} />}
+    </div>
+  )
+}
