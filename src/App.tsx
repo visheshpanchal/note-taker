@@ -9,6 +9,7 @@ import { DayPlanEditor } from './components/DayPlan/DayPlanEditor'
 import { DiagramEditor } from './components/Diagram/DiagramEditor'
 import { PropertiesPanel } from './components/Properties/PropertiesPanel'
 import { QuickOpen } from './components/Search/QuickOpen'
+import { SchemaMismatchDialog } from './components/SchemaMismatch/SchemaMismatchDialog'
 import type { Note, Todo, DayPlan, Diagram, AnyNote } from './types'
 import './App.css'
 
@@ -61,7 +62,7 @@ function MainContent() {
 
 export default function App() {
   const { showQuickOpen, setShowQuickOpen } = useUI()
-  const { setActiveId } = useNotes()
+  const { setActiveId, schemaMismatch, replaceMismatchedData, systemInfo, loading } = useNotes()
 
   useReminderChecker()
 
@@ -71,11 +72,29 @@ export default function App() {
     return cleanup
   }, [setActiveId])
 
+  function handleQuit() {
+    if (window.electronAPI?.system.quit) {
+      window.electronAPI.system.quit()
+    } else {
+      window.close()
+    }
+  }
+
+  const mismatchLocation = systemInfo?.notesFilePath ?? systemInfo?.storagePath ?? ''
+
   return (
     <div className="app">
       <Sidebar />
       <MainContent />
       {showQuickOpen && <QuickOpen onClose={() => setShowQuickOpen(false)} />}
+      {!loading && schemaMismatch && (
+        <SchemaMismatchDialog
+          mismatch={schemaMismatch}
+          location={mismatchLocation}
+          onReplace={replaceMismatchedData}
+          onQuit={handleQuit}
+        />
+      )}
     </div>
   )
 }

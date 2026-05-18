@@ -209,8 +209,24 @@ export interface AppSettings {
   storageLocation?: string
 }
 
+/**
+ * Root persisted data structure written to disk (notes.json).
+ *
+ * **Schema compatibility** — `version` must equal `CURRENT_DATA_VERSION`
+ * (currently `1`). On startup, `validateAppData()` checks every required
+ * field and its type. If any check fails, the app blocks with a
+ * `SchemaMismatchDialog` and lets the user replace the file rather than
+ * silently overwriting or crashing.
+ *
+ * Required fields validated at load time:
+ * - `version`  — must be a `number` equal to the current version
+ * - `notes`, `templates`, `tags`, `notebooks`, `folders`, `categories` — must be arrays
+ * - `settings`  — must be a plain object
+ * - `metadata`  — must be a plain object
+ */
 export interface AppData {
   $schema: string
+  /** Increment when the shape changes in a breaking way. See `CURRENT_DATA_VERSION`. */
   version: number
   settings: AppSettings
   notes: AnyNote[]
@@ -255,6 +271,7 @@ export interface ElectronAPI {
     getInfo: () => Promise<SystemInfo>
     pickFolder: () => Promise<string | null>
     openPath: (path: string) => Promise<void>
+    quit: () => void
     moveData: (
       oldPath: string,
       newPath: string

@@ -61,6 +61,44 @@ export function NoteEditor({ note }: NoteEditorProps) {
     onUpdate: ({ editor }) => {
       updateNote(note.id, { content: editor.getHTML() })
       detectSlash(editor)
+    },
+    editorProps: {
+      handlePaste: (view, event) => {
+        const items = event.clipboardData?.items
+        if (!items) return false
+        for (const item of Array.from(items)) {
+          if (item.type.startsWith('image/')) {
+            const file = item.getAsFile()
+            if (!file) continue
+            const reader = new FileReader()
+            reader.onload = (e) => {
+              const src = e.target?.result as string
+              const node = view.state.schema.nodes.image?.create({ src })
+              if (node) view.dispatch(view.state.tr.replaceSelectionWith(node))
+            }
+            reader.readAsDataURL(file)
+            return true
+          }
+        }
+        return false
+      },
+      handleDrop: (view, event, _slice, moved) => {
+        if (moved) return false
+        const file = event.dataTransfer?.files?.[0]
+        if (!file?.type.startsWith('image/')) return false
+        const pos = view.posAtCoords({ left: event.clientX, top: event.clientY })
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          const src = e.target?.result as string
+          const node = view.state.schema.nodes.image?.create({ src })
+          if (node) {
+            const insertAt = pos?.pos ?? view.state.selection.anchor
+            view.dispatch(view.state.tr.insert(insertAt, node))
+          }
+        }
+        reader.readAsDataURL(file)
+        return true
+      }
     }
   })
 
