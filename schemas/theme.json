@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "notetaker/theme/v1",
+  "$id": "notetaker/theme/v2",
   "title": "Theme",
   "description": "A visual theme for NoteTaker. Stored as an array in themes.json inside the user's storage directory. Each theme overrides a subset of the app's CSS custom properties via the `tokens` map.",
   "type": "object",
@@ -11,8 +11,9 @@
     "schemaVersion": {
       "type": "integer",
       "minimum": 1,
+      "maximum": 2,
       "default": 1,
-      "description": "Schema version for this theme object. Omitting this field is equivalent to version 1. Increment this when the shape of the theme object changes in a breaking way so the app can run the appropriate migration.\n\nVersion history:\n  1 — initial shape: id, name, mode, isBuiltIn, description, tokens."
+      "description": "Schema version for this theme object. Omitting this field is equivalent to version 1. The app automatically migrates older themes by filling any missing tokens from the mode defaults (light or dark), then stamps the current version.\n\nVersion history:\n  1 — initial shape: 22 tokens covering bg/text/border/accent/state/shadow.\n  2 — added --transition-slow token; ALL_TOKEN_KEYS now covers radius, layout, motion and font tokens so they are properly cleared on theme switch."
     },
 
     "id": {
@@ -32,7 +33,7 @@
     "mode": {
       "type": "string",
       "enum": ["light", "dark"],
-      "description": "Whether this theme targets a light or dark base. The app switches CSS variable defaults based on this value before applying `tokens`."
+      "description": "Whether this theme targets a light or dark base. The app switches CSS variable defaults based on this value before applying `tokens`. Missing tokens are filled from the matching mode defaults."
     },
 
     "isBuiltIn": {
@@ -48,147 +49,61 @@
 
     "tokens": {
       "type": "object",
-      "description": "Map of CSS custom property names to values. Only the properties you want to override need to be present — all others fall back to the mode defaults defined in index.css.",
+      "description": "Map of CSS custom property names to values. Only the properties you want to override need to be present — all others fall back to the mode defaults. Missing tokens are filled automatically during migration.",
       "additionalProperties": {
         "type": "string",
         "description": "Any valid CSS value (hex, rgb, hsl, var(), etc.)"
       },
       "properties": {
-        "--bg-primary": {
-          "type": "string",
-          "description": "Main canvas / editor background."
-        },
-        "--bg-secondary": {
-          "type": "string",
-          "description": "Secondary surfaces — toolbar, footer, inner panels."
-        },
-        "--bg-tertiary": {
-          "type": "string",
-          "description": "Tertiary surfaces — code blocks, chip backgrounds, deeply nested items."
-        },
-        "--bg-hover": {
-          "type": "string",
-          "description": "Background applied to interactive elements on hover."
-        },
-        "--bg-sidebar": {
-          "type": "string",
-          "description": "Sidebar / file-explorer background. Often slightly different from --bg-primary."
-        },
-        "--text-primary": {
-          "type": "string",
-          "description": "Default body text color."
-        },
-        "--text-secondary": {
-          "type": "string",
-          "description": "Subdued text — note titles in the list, metadata labels."
-        },
-        "--text-muted": {
-          "type": "string",
-          "description": "Faint text — placeholders, timestamps, keyboard hints."
-        },
-        "--border": {
-          "type": "string",
-          "description": "Default 1 px hairline border color."
-        },
-        "--border-strong": {
-          "type": "string",
-          "description": "Heavier border used for emphasis or focus rings."
-        },
-        "--accent": {
-          "type": "string",
-          "description": "Primary brand / action color. Used for buttons, links, active states."
-        },
-        "--accent-hover": {
-          "type": "string",
-          "description": "Accent color when the pointer hovers over an accented element."
-        },
-        "--accent-fg": {
-          "type": "string",
-          "description": "Foreground (text/icon) color painted on top of an accent-colored surface. Usually white."
-        },
-        "--accent-soft": {
-          "type": "string",
-          "description": "Low-opacity tint of --accent used for selection backgrounds and focus rings. Typically accent at 10–15% opacity."
-        },
-        "--danger": {
-          "type": "string",
-          "description": "Color for destructive actions (delete, error states)."
-        },
-        "--danger-hover": {
-          "type": "string",
-          "description": "Danger color on hover."
-        },
-        "--success": {
-          "type": "string",
-          "description": "Positive / completed state color."
-        },
-        "--warning": {
-          "type": "string",
-          "description": "Warning / in-progress state color."
-        },
-        "--shadow-xs": {
-          "type": "string",
-          "description": "Extra-small box-shadow for subtle lift (note cards at rest)."
-        },
-        "--shadow-sm": {
-          "type": "string",
-          "description": "Small box-shadow (note cards on hover, dropdowns)."
-        },
-        "--shadow-md": {
-          "type": "string",
-          "description": "Medium box-shadow (modals, popovers)."
-        },
-        "--shadow-lg": {
-          "type": "string",
-          "description": "Large box-shadow (full-screen overlays)."
-        },
-        "--radius-xs": {
-          "type": "string",
-          "description": "Extra-small border-radius (4 px by default)."
-        },
-        "--radius-sm": {
-          "type": "string",
-          "description": "Small border-radius (7 px by default)."
-        },
-        "--radius-md": {
-          "type": "string",
-          "description": "Medium border-radius (11 px by default)."
-        },
-        "--radius-lg": {
-          "type": "string",
-          "description": "Large border-radius (16 px by default)."
-        },
-        "--radius-xl": {
-          "type": "string",
-          "description": "Extra-large border-radius (22 px by default)."
-        },
-        "--sidebar-width": {
-          "type": "string",
-          "description": "Pixel width of the sidebar panel.",
-          "examples": ["272px", "300px"]
-        },
-        "--transition": {
-          "type": "string",
-          "description": "Default transition shorthand for micro-interactions.",
-          "examples": [".15s ease"]
-        },
-        "--font": {
-          "type": "string",
-          "description": "Font stack for all UI text.",
-          "examples": ["-apple-system, BlinkMacSystemFont, 'Inter', sans-serif"]
-        },
-        "--font-mono": {
-          "type": "string",
-          "description": "Monospace font stack for code blocks and timestamps.",
-          "examples": ["'JetBrains Mono', 'Fira Code', monospace"]
-        }
+
+        "--bg-primary":    { "type": "string", "description": "Main canvas / editor background." },
+        "--bg-secondary":  { "type": "string", "description": "Secondary surfaces — toolbar, footer, inner panels." },
+        "--bg-tertiary":   { "type": "string", "description": "Tertiary surfaces — code blocks, chip backgrounds, deeply nested items." },
+        "--bg-hover":      { "type": "string", "description": "Background applied to interactive elements on hover." },
+        "--bg-sidebar":    { "type": "string", "description": "Sidebar / file-explorer background." },
+
+        "--text-primary":  { "type": "string", "description": "Default body text color." },
+        "--text-secondary":{ "type": "string", "description": "Subdued text — note titles in the list, metadata labels." },
+        "--text-muted":    { "type": "string", "description": "Faint text — placeholders, timestamps, keyboard hints." },
+
+        "--border":        { "type": "string", "description": "Default 1 px hairline border color." },
+        "--border-strong": { "type": "string", "description": "Heavier border used for emphasis or focus rings." },
+
+        "--accent":        { "type": "string", "description": "Primary brand / action color. Used for buttons, links, active states." },
+        "--accent-hover":  { "type": "string", "description": "Accent color when the pointer hovers over an accented element." },
+        "--accent-fg":     { "type": "string", "description": "Foreground (text/icon) color painted on top of an accent-colored surface. Usually white." },
+        "--accent-soft":   { "type": "string", "description": "Low-opacity tint of --accent for selection backgrounds, focus rings and the todo add-row hover. Typically accent at 10–15% opacity." },
+
+        "--danger":        { "type": "string", "description": "Color for destructive actions (delete, error states)." },
+        "--danger-hover":  { "type": "string", "description": "Danger color on hover." },
+        "--success":       { "type": "string", "description": "Positive / completed state color. Also used for todo task completion checkboxes and step progress bars." },
+        "--warning":       { "type": "string", "description": "Warning / in-progress state color." },
+
+        "--shadow-xs":     { "type": "string", "description": "Extra-small box-shadow for subtle lift (note cards at rest)." },
+        "--shadow-sm":     { "type": "string", "description": "Small box-shadow (note cards on hover, todo item cards, dropdowns)." },
+        "--shadow-md":     { "type": "string", "description": "Medium box-shadow (modals, popovers)." },
+        "--shadow-lg":     { "type": "string", "description": "Large box-shadow (full-screen overlays)." },
+
+        "--radius-xs":     { "type": "string", "description": "Extra-small border-radius.", "default": "4px" },
+        "--radius-sm":     { "type": "string", "description": "Small border-radius.", "default": "7px" },
+        "--radius-md":     { "type": "string", "description": "Medium border-radius. Used for todo item cards and the detail panel sections.", "default": "11px" },
+        "--radius-lg":     { "type": "string", "description": "Large border-radius.", "default": "16px" },
+        "--radius-xl":     { "type": "string", "description": "Extra-large border-radius.", "default": "22px" },
+
+        "--sidebar-width": { "type": "string", "description": "Pixel width of the sidebar panel.", "default": "272px", "examples": ["272px", "300px"] },
+
+        "--transition":      { "type": "string", "description": "Default transition shorthand for micro-interactions.", "default": ".15s ease", "examples": [".15s ease", ".2s cubic-bezier(0.4,0,0.2,1)"] },
+        "--transition-slow": { "type": "string", "description": "Slower transition for larger motions (modals, panel slides).", "default": ".25s ease", "examples": [".25s ease", ".3s ease-in-out"] },
+
+        "--font":      { "type": "string", "description": "Font stack for all UI text.", "examples": ["-apple-system, BlinkMacSystemFont, 'Inter', sans-serif"] },
+        "--font-mono": { "type": "string", "description": "Monospace font stack for code blocks and timestamps.", "examples": ["'JetBrains Mono', 'Fira Code', monospace"] }
       }
     }
   },
 
   "examples": [
     {
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "id": "ocean-dark",
       "name": "Ocean Dark",
       "mode": "dark",
@@ -208,15 +123,16 @@
         "--accent":        "#2ea0a0",
         "--accent-hover":  "#3dbfbf",
         "--accent-fg":     "#ffffff",
-        "--accent-soft":   "#2ea0a020",
+        "--accent-soft":   "rgba(46,160,160,0.15)",
         "--danger":        "#f85149",
         "--danger-hover":  "#ff6a63",
         "--success":       "#3fb950",
         "--warning":       "#d29922"
-      }
+      },
+      "_comment": "Tokens not listed here (radius, transition, font, etc.) are automatically filled from the dark-mode defaults during migration."
     },
     {
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "id": "rose-light",
       "name": "Rose Light",
       "mode": "light",
@@ -236,7 +152,7 @@
         "--accent":        "#e11d48",
         "--accent-hover":  "#be123c",
         "--accent-fg":     "#ffffff",
-        "--accent-soft":   "#e11d4815",
+        "--accent-soft":   "rgba(225,29,72,0.10)",
         "--danger":        "#dc2626",
         "--danger-hover":  "#b91c1c",
         "--success":       "#16a34a",

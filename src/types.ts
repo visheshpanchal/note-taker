@@ -42,6 +42,12 @@ export interface Attachment {
   size: number
 }
 
+export interface TodoStep {
+  id: string
+  text: string
+  done: boolean
+}
+
 export interface TodoItem {
   id: string
   text: string
@@ -49,6 +55,11 @@ export interface TodoItem {
   timerSeconds: number
   timerRemaining: number
   timerRunning: boolean
+  isImportant: boolean
+  isMyDay: boolean
+  dueDate: string | null
+  steps: TodoStep[]
+  itemNote: string
 }
 
 // ─── Section types ───────────────────────────────────────────────────────────
@@ -229,6 +240,8 @@ export interface Theme {
   isBuiltIn: boolean
   description: string
   tokens: Record<string, string>
+  /** Schema version for forward-compat migration. Omitting equals version 1. */
+  schemaVersion?: number
 }
 
 // ─── Electron API ─────────────────────────────────────────────────────────────

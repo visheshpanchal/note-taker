@@ -45,6 +45,7 @@ export function createTodoItem(overrides: Partial<TodoItem> = {}): TodoItem {
   return {
     id: uuidv4(), text: '', checked: false,
     timerSeconds: 0, timerRemaining: 0, timerRunning: false,
+    isImportant: false, isMyDay: false, dueDate: null, steps: [], itemNote: '',
     ...overrides
   }
 }

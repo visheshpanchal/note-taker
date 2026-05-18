@@ -1,64 +1,218 @@
+/* ═══════════════════════════════════════════════════════════════
+   Todo Item — card design with animated checkbox
+   ═══════════════════════════════════════════════════════════════ */
+
 .todo-item {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition:
+    box-shadow var(--transition),
+    border-color var(--transition),
+    background var(--transition);
+  cursor: default;
+}
+
+.todo-item:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.todo-item--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.todo-item--important { border-left: 3px solid #ef4444; }
+.todo-item--done { opacity: 0.62; }
+
+/* ── Main row ──────────────────────────────────────────────────── */
+.todo-item__row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 4px;
-  border-radius: var(--radius-sm);
-  border-bottom: 1px solid var(--border);
-  transition: background var(--transition);
+  gap: 8px;
+  padding: 10px 10px 10px 12px;
 }
-.todo-item:last-child { border-bottom: none; }
-.todo-item:hover { background: var(--bg-secondary); }
 
+/* ── Checkbox ──────────────────────────────────────────────────── */
 .todo-item__check {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 2px solid var(--border);
+  width: 26px;
+  height: 26px;
+  padding: 2px;
+  background: transparent;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--transition);
-  background: transparent;
+  border-radius: 50%;
+  transition: background var(--transition);
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
-.todo-item__check:hover { border-color: var(--accent); }
-.todo-item--done .todo-item__check {
-  background: var(--success);
-  border-color: var(--success);
+.todo-item__check:hover { background: var(--bg-secondary); }
+
+.todo-item__check-svg { width: 22px; height: 22px; overflow: visible; }
+
+.todo-item__check-ring {
+  stroke: var(--border-strong);
+  fill: none;
+  transition: stroke 0.2s, fill 0.2s;
+}
+.todo-item__check:hover .todo-item__check-ring { stroke: var(--accent); }
+.todo-item--done .todo-item__check-ring {
+  stroke: var(--success);
+  fill: var(--success);
 }
 
-.todo-item__checkbox {
-  font-size: 12px;
-  color: white;
-  font-weight: 700;
-  line-height: 1;
+.todo-item__check-mark {
+  stroke: white;
+  fill: none;
+  animation: checkmark-draw 0.22s ease forwards;
+}
+@keyframes checkmark-draw {
+  from { stroke-dasharray: 20; stroke-dashoffset: 20; opacity: 0; }
+  to   { stroke-dasharray: 20; stroke-dashoffset: 0;  opacity: 1; }
+}
+
+/* ── Body (clickable area → opens detail panel) ────────────────── */
+.todo-item__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  outline: none;
+  overflow: hidden;
+}
+.todo-item__body:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .todo-item__text {
-  flex: 1;
-  font-size: 14px;
+  font-size: 13.5px;
+  font-weight: 450;
   color: var(--text-primary);
-  background: transparent;
+  width: 100%;
   transition: color var(--transition);
+  line-height: 1.4;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.todo-item__text::placeholder { color: var(--text-muted); }
+.todo-item__text--empty { color: var(--text-muted); font-style: italic; }
 .todo-item--done .todo-item__text {
   color: var(--text-muted);
   text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--text-muted) 50%, transparent);
 }
 
-.todo-item__delete {
-  opacity: 0;
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  font-size: 16px;
-  line-height: 20px;
-  text-align: center;
-  color: var(--text-muted);
-  transition: all var(--transition);
+/* ── Chips ─────────────────────────────────────────────────────── */
+.todo-item__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
 }
-.todo-item:hover .todo-item__delete { opacity: 1; }
-.todo-item__delete:hover { background: var(--danger); color: white; }
+.todo-item__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 1.5px 7px;
+  border-radius: 999px;
+  line-height: 16px;
+  letter-spacing: 0.01em;
+}
+.todo-item__chip--myday {
+  background: #fef3c7;
+  color: #92400e;
+}
+[data-theme=dark] .todo-item__chip--myday {
+  background: color-mix(in srgb, #f59e0b 15%, transparent);
+  color: #fbbf24;
+}
+.todo-item__chip--date {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+}
+.todo-item__chip--overdue {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+.todo-item__chip--steps {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.todo-item__chip--note {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+/* ── Action cluster (visible on hover / selected) ──────────────── */
+.todo-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.todo-item:hover .todo-item__actions,
+.todo-item--selected .todo-item__actions { opacity: 1; }
+
+.todo-item__act {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: var(--text-muted);
+  background: transparent;
+  transition: color var(--transition), background var(--transition), transform 0.12s ease;
+}
+.todo-item__act:hover { background: var(--bg-secondary); }
+.todo-item__act:active { transform: scale(0.88); }
+
+/* always show active flags */
+.todo-item__act--on { opacity: 1 !important; }
+
+.todo-item__act--sun { font-size: 14px; }
+.todo-item__act--sun.todo-item__act--on { color: #f59e0b; }
+.todo-item__act--sun:hover { color: #f59e0b; }
+
+.todo-item__act--star { font-size: 15px; }
+.todo-item__act--star.todo-item__act--on { color: #ef4444; }
+.todo-item__act--star:hover { color: #ef4444; }
+
+.todo-item__act--delete svg { stroke: currentColor; width: 14px; height: 14px; }
+.todo-item__act--delete:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+/* ── Steps mini-progress bar ───────────────────────────────────── */
+.todo-item__steps-bar {
+  height: 2px;
+  background: var(--bg-tertiary);
+  margin: 0 14px 10px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.todo-item__steps-bar-fill {
+  height: 100%;
+  background: var(--success);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
