@@ -13,11 +13,11 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "preview": "vite preview",
-    "dist": "node scripts/build.js",
-    "dist:mac": "node scripts/build.js --mac",
-    "dist:win": "node scripts/build.js --win",
-    "dist:linux": "node scripts/build.js --linux",
-    "dist:all": "node scripts/build.js --all"
+    "dist": "npm run build && node scripts/build.js",
+    "dist:mac": "npm run build && node scripts/build.js --mac",
+    "dist:win": "npm run build && node scripts/build.js --win",
+    "dist:linux": "npm run build && node scripts/build.js --linux",
+    "dist:all": "npm run build && node scripts/build.js --all"
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.1",
