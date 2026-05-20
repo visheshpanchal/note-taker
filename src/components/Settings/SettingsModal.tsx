@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback, ReactNode } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNotes } from '../../contexts/NotesContext'
-import { useTheme } from '../../contexts/ThemeContext'
 import { TemplateManager } from '../DayPlan/TemplateManager'
 import { ThemePicker } from './ThemePicker'
 import './SettingsModal.css'
@@ -40,19 +39,15 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ onClose }: SettingsModalProps) {
-  const { settings, systemInfo, saveStatus, lastSavedAt } = useNotes()
-  const { storagePath: themeStoragePath } = useTheme()
-  const { moveStoragePath } = useNotes()
+  const { settings, systemInfo, saveStatus, lastSavedAt, moveStoragePath } = useNotes()
   const [tab, setTab] = useState<Tab>('Storage')
   const [moveStatus, setMoveStatus] = useState<'moving' | 'success' | 'error' | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
 
-  const currentPath   = systemInfo?.storagePath || settings.storageLocation || ''
+  const currentPath   = settings.storageLocation || systemInfo?.storagePath || ''
   const notesFilePath = systemInfo?.notesFilePath || (currentPath ? `${currentPath}/notes.json` : '')
   const defaultPath   = systemInfo?.storagePath || ''
   const isDefault     = !settings.storageLocation || settings.storageLocation === defaultPath
-  const templatesPath = systemInfo?.templatesPath || (currentPath ? `${currentPath}/templates` : '')
-  const themesPath    = systemInfo?.themesPath    || (currentPath ? `${currentPath}/themes`    : '')
 
   async function handlePickAndMove() {
     const newPath = await window.electronAPI?.system.pickFolder()
@@ -103,22 +98,11 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
           {tab === 'Storage' && (
             <section className="settings-section">
-              <h3 className="settings-section__title">Active Storage Location</h3>
-              <p className="settings-section__desc">
-                This is where your data is being written right now. Moving transfers all existing notes to the new location and persists it across relaunches.
-              </p>
-
               <FolderRow
-                label="notes.json (active file)"
-                filePath={notesFilePath}
-                onOpen={() => window.electronAPI?.system.openPath(currentPath)}
-                highlight
-              />
-
-              <FolderRow
-                label="Storage folder"
+                label="Storage Location"
                 filePath={currentPath}
                 onOpen={() => window.electronAPI?.system.openPath(currentPath)}
+                highlight
               />
 
               {isDefault && (
@@ -140,23 +124,6 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
               {moveStatus === 'success' && <div className="storage-status storage-status--success">✅ Data moved and path saved.</div>}
               {moveStatus === 'error'   && <div className="storage-status storage-status--error">❌ {errorMsg}</div>}
-
-              <div style={{ marginTop: 20 }}>
-                <h3 className="settings-section__title" style={{ marginBottom: 10 }}>Subfolders</h3>
-                <FolderRow
-                  label="templates/"
-                  filePath={templatesPath}
-                  onOpen={() => window.electronAPI?.system.openPath(templatesPath)}
-                />
-                <FolderRow
-                  label="themes/"
-                  filePath={themesPath}
-                  onOpen={() => window.electronAPI?.system.openPath(themesPath)}
-                />
-                <p className="settings-section__desc" style={{ marginTop: 8, marginBottom: 0 }}>
-                  Drop <code>.json</code> files into these folders to add custom templates or themes.
-                </p>
-              </div>
             </section>
           )}
 
@@ -207,15 +174,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
             <section className="settings-section">
               <h3 className="settings-section__title">Day Plan Templates</h3>
               <p className="settings-section__desc">
-                Templates are stored as JSON files in <code>templates/</code>. Built-in templates cannot be deleted. Duplicate one to create a custom version.
+                Built-in templates cannot be deleted. Duplicate one to create a custom version.
               </p>
-              {templatesPath && (
-                <FolderRow
-                  label="templates/"
-                  filePath={templatesPath}
-                  onOpen={() => window.electronAPI?.system.openPath(templatesPath)}
-                />
-              )}
               <TemplateManager />
             </section>
           )}
@@ -223,16 +183,6 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
           {tab === 'Themes' && (
             <section className="settings-section">
               <h3 className="settings-section__title">Appearance Themes</h3>
-              <p className="settings-section__desc">
-                Themes are stored as JSON files in <code>themes/</code>. Select a theme to apply it instantly.
-              </p>
-              {themesPath && (
-                <FolderRow
-                  label="themes/"
-                  filePath={themesPath}
-                  onOpen={() => window.electronAPI?.system.openPath(themesPath)}
-                />
-              )}
               <ThemePicker />
             </section>
           )}

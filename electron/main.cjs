@@ -17,11 +17,11 @@ function notesFilePath(storagePath) {
 }
 
 function templatesFilePath(storagePath) {
-  return path.join(storagePath, 'templates.json')
+  return path.join(storagePath, 'templates', 'templates.json')
 }
 
 function themesFilePath(storagePath) {
-  return path.join(storagePath, 'themes.json')
+  return path.join(storagePath, 'themes', 'themes.json')
 }
 
 function attachmentsDir(storagePath, noteId) {
@@ -45,6 +45,26 @@ function writeJson(filePath, data) {
 
 // Tracks the user's chosen storage location across IPC calls
 let currentStoragePath = null
+
+function getStoragePtrFile() {
+  return path.join(app.getPath('userData'), 'storage-location.txt')
+}
+
+function initStoragePath() {
+  try {
+    const f = getStoragePtrFile()
+    if (fs.existsSync(f)) {
+      const saved = fs.readFileSync(f, 'utf8').trim()
+      if (saved && saved !== getDefaultStoragePath() && fs.existsSync(path.join(saved, 'notes.json'))) {
+        currentStoragePath = saved
+      }
+    }
+  } catch {}
+}
+
+function persistStoragePath(p) {
+  try { fs.writeFileSync(getStoragePtrFile(), p, 'utf8') } catch {}
+}
 
 function resolveStoragePath(data) {
   return data?.settings?.storageLocation || currentStoragePath || getDefaultStoragePath()
@@ -123,15 +143,14 @@ ipcMain.handle('system:openPath', (_, p) => shell.openPath(p))
 ipcMain.handle('system:moveData', async (_, oldPath, newPath) => {
   try {
     ensureDir(newPath)
-    for (const file of ['notes.json', 'templates.json', 'themes.json']) {
-      const src = path.join(oldPath, file)
-      if (fs.existsSync(src)) fs.copyFileSync(src, path.join(newPath, file))
-    }
-    const srcAttach = path.join(oldPath, 'attachments')
-    if (fs.existsSync(srcAttach)) {
-      fs.cpSync(srcAttach, path.join(newPath, 'attachments'), { recursive: true })
+    const notesSrc = path.join(oldPath, 'notes.json')
+    if (fs.existsSync(notesSrc)) fs.copyFileSync(notesSrc, path.join(newPath, 'notes.json'))
+    for (const dir of ['templates', 'themes', 'attachments']) {
+      const src = path.join(oldPath, dir)
+      if (fs.existsSync(src)) fs.cpSync(src, path.join(newPath, dir), { recursive: true })
     }
     currentStoragePath = newPath
+    persistStoragePath(newPath)
     const data = readJson(notesFilePath(newPath))
     if (data) {
       data.settings = { ...data.settings, storageLocation: newPath }
@@ -269,6 +288,7 @@ nativeTheme.on('updated', () => {
 // ─── App lifecycle ────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
+  initStoragePath()
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

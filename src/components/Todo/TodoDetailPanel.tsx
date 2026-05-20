@@ -12,8 +12,9 @@ interface Props {
 
 export function TodoDetailPanel({ item, onChange, onDelete, onClose }: Props) {
   const [newStep, setNewStep] = useState('')
-  const newStepRef = useRef<HTMLInputElement>(null)
-  const titleRef   = useRef<HTMLInputElement>(null)
+  const newStepRef  = useRef<HTMLInputElement>(null)
+  const titleRef    = useRef<HTMLInputElement>(null)
+  const dateInputRef = useRef<HTMLInputElement>(null)
   const steps: TodoStep[] = item.steps ?? []
 
   // Focus the title so the user can immediately edit it
@@ -25,6 +26,16 @@ export function TodoDetailPanel({ item, onChange, onDelete, onClose }: Props) {
 
   function patch(fields: Partial<TodoItem>) {
     onChange({ ...item, ...fields })
+  }
+
+  function pickDate() {
+    const el = dateInputRef.current
+    if (!el) return
+    if (typeof (el as HTMLInputElement & { showPicker?: () => void }).showPicker === 'function') {
+      try { (el as HTMLInputElement & { showPicker: () => void }).showPicker() } catch { el.focus() }
+    } else {
+      el.focus()
+    }
   }
 
   function addStep() {
@@ -130,12 +141,14 @@ export function TodoDetailPanel({ item, onChange, onDelete, onClose }: Props) {
           ) : (
             <div className="tdp__date-empty">
               <input
+                ref={dateInputRef}
                 type="date"
                 className="tdp__date-input tdp__date-input--pick"
-                value=""
-                onChange={e => patch({ dueDate: e.target.value || null })}
+                onChange={e => { if (e.target.value) patch({ dueDate: e.target.value }) }}
               />
-              <span className="tdp__date-placeholder">Pick a date</span>
+              <button className="tdp__date-placeholder" onClick={pickDate}>
+                Pick a date
+              </button>
             </div>
           )}
         </div>

@@ -91,6 +91,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         if (loaded && loaded.length > 0) {
           // Migrate any themes that were saved under an older schema version.
           setThemes(loaded.map(migrateTheme))
+        } else {
+          for (const t of BUILT_IN_THEMES) {
+            await window.electronAPI.themes.save(info.storagePath, t).catch(() => {})
+          }
         }
       } catch (e) {
         console.warn('Failed to load themes from disk:', e)

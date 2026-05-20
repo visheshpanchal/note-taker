@@ -102,6 +102,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         } catch (e) {
           console.warn('Failed to load templates from disk:', e)
         }
+        for (const t of FALLBACK_TEMPLATES) {
+          await window.electronAPI.templates.save(effectiveStoragePath!, t).catch(() => {})
+        }
       }
       setFileTemplates(FALLBACK_TEMPLATES)
     }
@@ -296,7 +299,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const moveStoragePath = useCallback(async (newPath: string) => {
-    const oldPath = data?.settings?.storageLocation
+    const oldPath = data?.settings?.storageLocation || systemInfo?.storagePath
     if (!oldPath || oldPath === newPath) return { success: false, error: 'Same path' }
     const api = window.electronAPI?.system
     if (!api?.moveData) return { success: false, error: 'Not in Electron' }
@@ -313,7 +316,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       return { success: false, error: (e as Error).message }
     }
-  }, [data?.settings?.storageLocation])
+  }, [data?.settings?.storageLocation, systemInfo?.storagePath])
 
   return (
     <NotesContext.Provider value={{
