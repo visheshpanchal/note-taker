@@ -95,18 +95,24 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!effectiveStoragePath) return
     async function loadTemplates() {
-      if (window.electronAPI?.templates) {
-        try {
-          const loaded = await window.electronAPI.templates.load(effectiveStoragePath!)
-          if (loaded && loaded.length > 0) { setFileTemplates(loaded); return }
-        } catch (e) {
-          console.warn('Failed to load templates from disk:', e)
+      if (!window.electronAPI?.templates) { setFileTemplates(FALLBACK_TEMPLATES); return }
+      try {
+        const loaded: Template[] = await window.electronAPI.templates.load(effectiveStoragePath!)
+        const loadedIds = new Set(loaded.map(t => t.id))
+
+        // Ensure every built-in template exists on disk; disk version wins if present
+        for (const builtIn of FALLBACK_TEMPLATES) {
+          if (!loadedIds.has(builtIn.id)) {
+            await window.electronAPI.templates.save(effectiveStoragePath!, builtIn).catch(() => {})
+            loaded.push(builtIn)
+          }
         }
-        for (const t of FALLBACK_TEMPLATES) {
-          await window.electronAPI.templates.save(effectiveStoragePath!, t).catch(() => {})
-        }
+
+        setFileTemplates(loaded.length > 0 ? loaded : FALLBACK_TEMPLATES)
+      } catch (e) {
+        console.warn('Failed to load templates from disk:', e)
+        setFileTemplates(FALLBACK_TEMPLATES)
       }
-      setFileTemplates(FALLBACK_TEMPLATES)
     }
     loadTemplates()
   }, [effectiveStoragePath])

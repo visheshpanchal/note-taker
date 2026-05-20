@@ -16,12 +16,20 @@ function notesFilePath(storagePath) {
   return path.join(storagePath, 'notes.json')
 }
 
-function templatesFilePath(storagePath) {
-  return path.join(storagePath, 'templates', 'templates.json')
+function templatesDir(storagePath) {
+  return path.join(storagePath, 'templates')
 }
 
-function themesFilePath(storagePath) {
-  return path.join(storagePath, 'themes', 'themes.json')
+function themesDir(storagePath) {
+  return path.join(storagePath, 'themes')
+}
+
+function readJsonDir(dirPath) {
+  if (!fs.existsSync(dirPath)) return []
+  return fs.readdirSync(dirPath)
+    .filter(f => f.endsWith('.json'))
+    .map(f => { try { return JSON.parse(fs.readFileSync(path.join(dirPath, f), 'utf8')) } catch { return null } })
+    .filter(Boolean)
 }
 
 function attachmentsDir(storagePath, noteId) {
@@ -125,8 +133,8 @@ ipcMain.handle('system:getInfo', () => {
   return {
     storagePath,
     notesFilePath: notesFilePath(storagePath),
-    templatesPath: templatesFilePath(storagePath),
-    themesPath: themesFilePath(storagePath),
+    templatesPath: templatesDir(storagePath),
+    themesPath: themesDir(storagePath),
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   }
 })
@@ -165,45 +173,35 @@ ipcMain.handle('system:moveData', async (_, oldPath, newPath) => {
 // ─── IPC: templates ───────────────────────────────────────────────────────────
 
 ipcMain.handle('templates:load', (_, storagePath) => {
-  return readJson(templatesFilePath(storagePath)) ?? []
+  return readJsonDir(templatesDir(storagePath))
 })
 
 ipcMain.handle('templates:save', (_, storagePath, template) => {
-  ensureDir(storagePath)
-  const fp = templatesFilePath(storagePath)
-  const list = readJson(fp) ?? []
-  const idx = list.findIndex(t => t.id === template.id)
-  if (idx >= 0) list[idx] = template
-  else list.push(template)
-  writeJson(fp, list)
+  const dir = templatesDir(storagePath)
+  ensureDir(dir)
+  writeJson(path.join(dir, `${template.id}.json`), template)
 })
 
 ipcMain.handle('templates:delete', (_, storagePath, id) => {
-  const fp = templatesFilePath(storagePath)
-  const list = readJson(fp) ?? []
-  writeJson(fp, list.filter(t => t.id !== id))
+  const fp = path.join(templatesDir(storagePath), `${id}.json`)
+  if (fs.existsSync(fp)) fs.unlinkSync(fp)
 })
 
 // ─── IPC: themes ──────────────────────────────────────────────────────────────
 
 ipcMain.handle('themes:load', (_, storagePath) => {
-  return readJson(themesFilePath(storagePath)) ?? []
+  return readJsonDir(themesDir(storagePath))
 })
 
 ipcMain.handle('themes:save', (_, storagePath, theme) => {
-  ensureDir(storagePath)
-  const fp = themesFilePath(storagePath)
-  const list = readJson(fp) ?? []
-  const idx = list.findIndex(t => t.id === theme.id)
-  if (idx >= 0) list[idx] = theme
-  else list.push(theme)
-  writeJson(fp, list)
+  const dir = themesDir(storagePath)
+  ensureDir(dir)
+  writeJson(path.join(dir, `${theme.id}.json`), theme)
 })
 
 ipcMain.handle('themes:delete', (_, storagePath, id) => {
-  const fp = themesFilePath(storagePath)
-  const list = readJson(fp) ?? []
-  writeJson(fp, list.filter(t => t.id !== id))
+  const fp = path.join(themesDir(storagePath), `${id}.json`)
+  if (fs.existsSync(fp)) fs.unlinkSync(fp)
 })
 
 // ─── IPC: notifications ───────────────────────────────────────────────────────

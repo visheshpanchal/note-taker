@@ -87,15 +87,34 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       try {
         const info = await window.electronAPI.system.getInfo()
         setStoragePath(info.storagePath)
-        const loaded = await window.electronAPI.themes.load(info.storagePath)
-        if (loaded && loaded.length > 0) {
-          // Migrate any themes that were saved under an older schema version.
-          setThemes(loaded.map(migrateTheme))
-        } else {
-          for (const t of BUILT_IN_THEMES) {
-            await window.electronAPI.themes.save(info.storagePath, t).catch(() => {})
+        const loaded: Theme[] = await window.electronAPI.themes.load(info.storagePath)
+        const byId = new Map(loaded.map(t => [t.id, t]))
+        const final: Theme[] = []
+
+        // Validate each built-in theme: write if missing, fill any missing tokens if present
+        for (const builtIn of BUILT_IN_THEMES) {
+          const onDisk = byId.get(builtIn.id)
+          if (!onDisk) {
+            await window.electronAPI.themes.save(info.storagePath, builtIn).catch(() => {})
+            final.push(builtIn)
+          } else {
+            const missingKeys = Object.keys(builtIn.tokens).filter(k => !(k in onDisk.tokens))
+            if (missingKeys.length > 0) {
+              // Fill missing token keys from built-in defaults; keep user's existing values
+              const fixed: Theme = { ...onDisk, tokens: { ...builtIn.tokens, ...onDisk.tokens }, schemaVersion: CURRENT_SCHEMA_VERSION }
+              await window.electronAPI.themes.save(info.storagePath, fixed).catch(() => {})
+              final.push(fixed)
+            } else {
+              final.push(migrateTheme(onDisk))
+            }
+            byId.delete(builtIn.id)
           }
         }
+
+        // Add any custom themes (not built-in)
+        for (const [, t] of byId) final.push(migrateTheme(t))
+
+        setThemes(final)
       } catch (e) {
         console.warn('Failed to load themes from disk:', e)
       }
