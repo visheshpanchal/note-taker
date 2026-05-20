@@ -2,7 +2,7 @@
 
 ---
 
-## v1.1 — Folder Structure, Drag & Drop, Electron, Tests
+## v1.1.0 — Folder Structure, Drag & Drop, Electron, Tests
 `da61d44` · 17 May 2026
 
 ### New Features

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { Editor } from '@tiptap/react'
 import './EditorToolbar.css'
 
@@ -67,11 +67,19 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
   const [showTextColor, setShowTextColor] = useState(false)
   const [showHighlight, setShowHighlight] = useState(false)
   const [showTableMenu, setShowTableMenu] = useState(false)
+  const [showImageMenu, setShowImageMenu] = useState(false)
+  const [imageUrl, setImageUrl] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   if (!editor) return null
   const ed = editor
 
-  function closeAll() { setShowTextColor(false); setShowHighlight(false); setShowTableMenu(false) }
+  function closeAll() {
+    setShowTextColor(false)
+    setShowHighlight(false)
+    setShowTableMenu(false)
+    setShowImageMenu(false)
+  }
 
   function promptLink() {
     const prev = ed.getAttributes('link').href ?? ''
@@ -81,9 +89,26 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     else ed.chain().focus().setLink({ href: url }).run()
   }
 
-  function promptImage() {
-    const url = window.prompt('Image URL')
-    if (url) ed.chain().focus().setImage({ src: url }).run()
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const src = ev.target?.result as string
+      ed.chain().focus().setImage({ src }).run()
+      setShowImageMenu(false)
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  function insertImageUrl() {
+    const url = imageUrl.trim()
+    if (url) {
+      ed.chain().focus().setImage({ src: url }).run()
+      setImageUrl('')
+      setShowImageMenu(false)
+    }
   }
 
   const inTable = ed.isActive('table')
@@ -163,7 +188,40 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       <Divider />
 
       <ToolBtn onClick={promptLink} active={editor.isActive('link')} title="Link">🔗</ToolBtn>
-      <ToolBtn onClick={promptImage} title="Insert image">🖼</ToolBtn>
+
+      <div className="toolbar-popover-wrap">
+        <ToolBtn
+          onClick={() => { setShowImageMenu(v => !v); setShowTextColor(false); setShowHighlight(false); setShowTableMenu(false) }}
+          active={showImageMenu}
+          title="Insert image"
+        >🖼</ToolBtn>
+        {showImageMenu && (
+          <div className="toolbar-image-menu">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+            <button className="toolbar-image-upload-btn" onClick={() => fileInputRef.current?.click()}>
+              📁 From computer
+            </button>
+            <div className="toolbar-image-url-row">
+              <input
+                type="text"
+                className="toolbar-image-url-input"
+                placeholder="Paste image URL…"
+                value={imageUrl}
+                onChange={e => setImageUrl(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') insertImageUrl() }}
+                autoFocus
+              />
+              <button className="toolbar-image-url-btn" onClick={insertImageUrl}>Insert</button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="toolbar-popover-wrap">
         <ToolBtn

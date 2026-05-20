@@ -30,7 +30,9 @@
       "Bash(npx vite *)",
       "Bash(xargs kill -9)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
-      "Bash(lsof -ti tcp:5171 -sTCP:LISTEN)"
+      "Bash(lsof -ti tcp:5171 -sTCP:LISTEN)",
+      "Skill(frontend-design)",
+      "Bash(grep -E '\\\\.\\(ts|tsx\\)$')"
     ]
   }
 }

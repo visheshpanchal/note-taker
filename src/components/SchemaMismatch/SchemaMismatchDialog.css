@@ -1,0 +1,217 @@
+.smsd-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+  animation: smsd-overlay-in 0.2s ease;
+}
+@keyframes smsd-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.smsd {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  width: 480px;
+  max-width: calc(100vw - 48px);
+  overflow: hidden;
+  animation: smsd-in 0.2s ease;
+}
+@keyframes smsd-in {
+  from { opacity: 0; transform: translateY(-14px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── Warning stripe at top ─────────────────────── */
+.smsd__stripe {
+  height: 4px;
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+/* ── Header ────────────────────────────────────── */
+.smsd__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 22px 24px 0;
+}
+
+.smsd__icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #f59e0b;
+}
+
+.smsd__titles {
+  flex: 1;
+}
+
+.smsd__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.smsd__subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Body ──────────────────────────────────────── */
+.smsd__body {
+  padding: 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Mismatch detail card ──────────────────────── */
+.smsd__detail {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 3px solid #f59e0b;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+}
+
+.smsd__detail-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0 0 4px;
+}
+
+.smsd__detail-value {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: 'SF Mono', 'Fira Mono', 'Menlo', monospace;
+  margin: 0;
+}
+
+/* ── Location row ──────────────────────────────── */
+.smsd__location {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+}
+
+.smsd__location-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0 0 6px;
+}
+
+.smsd__location-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.smsd__location-path {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Fira Mono', 'Menlo', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.smsd__open-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.smsd__open-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+.smsd__open-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ── Warning note ──────────────────────────────── */
+.smsd__warning-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.07);
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Footer ────────────────────────────────────── */
+.smsd__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 24px 22px;
+}
+
+.smsd__btn {
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.smsd__btn--ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+.smsd__btn--ghost:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.smsd__btn--danger {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+}
+.smsd__btn--danger:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+}

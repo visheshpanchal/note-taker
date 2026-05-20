@@ -3,6 +3,8 @@ import { v4 as uuidv4 } from 'uuid'
 import { loadData, saveData } from '../utils/storage'
 import { createDefaultData, createDefaultTemplate, createFocusTemplate } from '../utils/noteFactory'
 import { BUILT_IN_CATEGORIES } from '../utils/categories'
+import { validateAppData } from '../utils/schemaValidation'
+import type { SchemaMismatch } from '../utils/schemaValidation'
 import type {
   AnyNote, Tag, Notebook, Folder, Category, Template, AppData,
   AppSettings, SystemInfo, SaveStatus
@@ -44,6 +46,8 @@ interface NotesContextValue {
   loading: boolean
   saveStatus: SaveStatus
   lastSavedAt: Date | null
+  schemaMismatch: SchemaMismatch | null
+  replaceMismatchedData: () => Promise<void>
 }
 
 const NotesContext = createContext<NotesContextValue | null>(null)
@@ -58,6 +62,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [fileTemplates, setFileTemplates] = useState<Template[] | null>(null)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  const [schemaMismatch, setSchemaMismatch] = useState<SchemaMismatch | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const savedFadeRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dataRef = useRef<AppData | null>(null)
@@ -71,8 +76,17 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         loadData(),
         window.electronAPI?.system.getInfo().catch(() => null)
       ])
-      setData(loaded || createDefaultData())
       setSystemInfo(info ?? null)
+      if (loaded !== null) {
+        const mismatch = validateAppData(loaded)
+        if (mismatch) {
+          setSchemaMismatch(mismatch)
+        } else {
+          setData(loaded)
+        }
+      } else {
+        setData(createDefaultData())
+      }
       setLoading(false)
     }
     init()
@@ -87,6 +101,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
           if (loaded && loaded.length > 0) { setFileTemplates(loaded); return }
         } catch (e) {
           console.warn('Failed to load templates from disk:', e)
+        }
+        for (const t of FALLBACK_TEMPLATES) {
+          await window.electronAPI.templates.save(effectiveStoragePath!, t).catch(() => {})
         }
       }
       setFileTemplates(FALLBACK_TEMPLATES)
@@ -274,8 +291,15 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     setData(prev => prev ? { ...prev, settings: { ...(prev.settings ?? {}), ...patch } } : prev)
   }, [])
 
+  const replaceMismatchedData = useCallback(async () => {
+    const fresh = createDefaultData()
+    await saveData(fresh)
+    setData(fresh)
+    setSchemaMismatch(null)
+  }, [])
+
   const moveStoragePath = useCallback(async (newPath: string) => {
-    const oldPath = data?.settings?.storageLocation
+    const oldPath = data?.settings?.storageLocation || systemInfo?.storagePath
     if (!oldPath || oldPath === newPath) return { success: false, error: 'Same path' }
     const api = window.electronAPI?.system
     if (!api?.moveData) return { success: false, error: 'Not in Electron' }
@@ -292,7 +316,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       return { success: false, error: (e as Error).message }
     }
-  }, [data?.settings?.storageLocation])
+  }, [data?.settings?.storageLocation, systemInfo?.storagePath])
 
   return (
     <NotesContext.Provider value={{
@@ -306,7 +330,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       settings: data?.settings ?? {},
       updateSettings, moveStoragePath,
       systemInfo, loading,
-      saveStatus, lastSavedAt
+      saveStatus, lastSavedAt,
+      schemaMismatch, replaceMismatchedData
     }}>
       {children}
     </NotesContext.Provider>

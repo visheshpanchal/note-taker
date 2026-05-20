@@ -21,7 +21,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { id: 'code',    label: 'Code Block',   icon: '</>',  desc: 'Syntax-highlighted code', keywords: ['code','pre'] },
   { id: 'table',   label: 'Table',        icon: '⊞',    desc: 'Insert a 3×3 table',     keywords: ['table','grid'] },
   { id: 'divider', label: 'Divider',      icon: '—',    desc: 'Horizontal rule',         keywords: ['divider','hr','rule'] },
-  { id: 'image',   label: 'Image',        icon: '🖼',   desc: 'Embed image by URL',      keywords: ['image','img','photo'] },
+  { id: 'image',   label: 'Image',        icon: '🖼',   desc: 'Embed image by URL',      keywords: ['image','img','photo','svg'] },
 ]
 
 export function applySlashCommand(id: string, editor: Editor, range: { from: number; to: number }) {
